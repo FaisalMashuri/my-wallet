@@ -1,0 +1,9 @@
+{
+  "1000": {"var": "ErrInvalidRequestFamily", "msg": "Invalid Request"},
+  "4050": {"var": "ErrMethodNotAllowed", "msg": "Method Not Allowed"},
+  "4040": {"var": "ErrUrlNotFound", "msg": "Url Not Found"},
+  "404": {"var": "ErrUrlNotFound", "msg": "Url Not Found"},
+  "1001": {"var": "ErrPasswordNotMatch", "msg": "Password Not Match"},
+  "5000": {"var": "ErrInternalServer", "msg": "Internal Server Error"},
+  "1002": {"var": "ErrContextDeadlineExceeded", "msg": "Context mencapai batas waktu, operasi terlalu lama"}
+}
