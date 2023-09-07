@@ -5,7 +5,6 @@ import (
 	"github.com/FaisalMashuri/my-wallet/shared"
 	"github.com/FaisalMashuri/my-wallet/shared/contract"
 	"github.com/Saucon/errcntrct"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
 	"net/http"
@@ -25,17 +24,22 @@ func NewErrorhandler(ctx *fiber.Ctx, err error) error {
 func ErrorHandler(error error) (int, interface{}) {
 	var e *fiber.Error
 	var code interface{}
+
 	if errors.As(error, &e) {
-		code = e.Code
+		code = e.Message
+
 	}
 
-	fmt.Println("Code : ", code)
 	switch code {
 	case http.StatusMethodNotAllowed:
 		fmt.Println("hai")
 		return errcntrct.ErrorMessage(http.StatusMethodNotAllowed, "", errors.New(contract.ErrMethodNotAllowed))
 	case http.StatusNotFound:
 		return errcntrct.ErrorMessage(http.StatusNotFound, "", errors.New(contract.ErrUrlNotFound))
+	case contract.ErrRecordNotFound:
+		return errcntrct.ErrorMessage(http.StatusInternalServerError, "", errors.New(contract.ErrRecordNotFound))
+	case contract.ErrEmailAlreadyRegister:
+		return errcntrct.ErrorMessage(http.StatusInternalServerError, "", errors.New(contract.ErrEmailAlreadyRegister))
 	case contract.ErrInvalidRequestFamily:
 		return errcntrct.ErrorMessage(http.StatusBadRequest, "", errors.New(contract.ErrInvalidRequestFamily))
 	case contract.ErrPasswordNotMatch:
@@ -45,7 +49,10 @@ func ErrorHandler(error error) (int, interface{}) {
 	case contract.ErrContextDeadlineExceeded:
 		return errcntrct.ErrorMessage(http.StatusGatewayTimeout, "", errors.New(contract.ErrContextDeadlineExceeded))
 	}
+	if code == nil {
+		code = "9999"
+	}
 
-	return errcntrct.ErrorMessage(code.(int), "", errors.New(contract.ErrUnexpectedError))
+	return errcntrct.ErrorMessage(9999, "", errors.New(contract.ErrUnexpectedError))
 
 }
