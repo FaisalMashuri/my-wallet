@@ -6,6 +6,7 @@
   "1001": {"var": "ErrPasswordNotMatch", "msg": "Password Not Match"},
   "0299" : {"var" :  "ErrRecordNotFound", "msg": "Record Not Found"},
   "0300" : {"var" :  "ErrEmailAlreadyRegister", "msg": "Email Already Register"},
+  "0301" : {"var" :  "ErrInsuficentBalance", "msg": "No Enough Balance"},
   "5000": {"var": "ErrInternalServer", "msg": "Internal Server Error"},
   "1002": {"var": "ErrContextDeadlineExceeded", "msg": "Context mencapai batas waktu, operasi terlalu lama"}
 }

@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/FaisalMashuri/my-wallet/config"
+	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"github.com/FaisalMashuri/my-wallet/middleware"
 	"github.com/Saucon/errcntrct"
@@ -11,7 +12,8 @@ import (
 )
 
 type RouteParams struct {
-	UserController user.UserController
+	UserController        user.UserController
+	TransactionController transaction.TransactionController
 }
 
 type router struct {
@@ -44,4 +46,6 @@ func (r *router) SetupRoute(app *fiber.App) {
 	})
 
 	v1.Use(middleware.NewAuthMiddleware(config.AppConfig.SecretKey))
+	v1.Post("/tranfer-inquiry", middleware.GetCredential, r.RouteParams.TransactionController.TransferInquiry)
+	v1.Post("/transfer-exec", middleware.GetCredential, r.RouteParams.TransactionController.TransferExec)
 }

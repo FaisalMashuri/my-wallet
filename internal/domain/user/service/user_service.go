@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/FaisalMashuri/my-wallet/internal/domain/account"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/request"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/response"
@@ -12,14 +13,16 @@ import (
 )
 
 type userService struct {
-	repo user.UserRepository
-	log  *logrus.Logger
+	repo        user.UserRepository
+	repoAccount account.AccountRepository
+	log         *logrus.Logger
 }
 
-func NewService(repo user.UserRepository, log *logrus.Logger) user.UserService {
+func NewService(repo user.UserRepository, log *logrus.Logger, repoAccount account.AccountRepository) user.UserService {
 	return &userService{
-		repo: repo,
-		log:  log,
+		repo:        repo,
+		repoAccount: repoAccount,
+		log:         log,
 	}
 }
 
@@ -44,7 +47,7 @@ func (s *userService) Login(userRequest *request.LoginRequest) (*response.LoginR
 		s.log.Info("faile generate token")
 		return nil, errors.New(contract.ErrUnexpectedError)
 	}
-	refeshToken, err := shared.GenerateAccessToken(userData)
+	refeshToken, err := shared.GenerateRefreshToken(userData)
 	if err != nil {
 		s.log.Info("faile generate token")
 		return nil, errors.New(contract.ErrUnexpectedError)
@@ -74,6 +77,18 @@ func (s *userService) RegisterUser(userRequest *request.RegisterRequest) (userDa
 	if err != nil {
 		s.log.WithField("error", err.Error()).Info("failed to create user")
 		return nil, err
+	}
+
+	accountData := account.Account{
+		UserID:        userData.ID,
+		Balance:       0,
+		AccountNumber: shared.GenerateAccountNumber(),
+	}
+
+	_, err = s.repoAccount.CreateAccount(accountData)
+	if err != nil {
+		s.log.Info("failed to create account")
+		return nil, errors.New(contract.ErrInternalServer)
 	}
 
 	return userData, nil

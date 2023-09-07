@@ -3,6 +3,8 @@ package infrastructure
 import (
 	"fmt"
 	"github.com/FaisalMashuri/my-wallet/config"
+	domainAccount "github.com/FaisalMashuri/my-wallet/internal/domain/account"
+	domainTransaction "github.com/FaisalMashuri/my-wallet/internal/domain/transaction"
 	domainUser "github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -53,10 +55,18 @@ func AutoMigrate(db *gorm.DB) {
 	fmt.Println("migrasi")
 	db.Debug().AutoMigrate(
 		domainUser.User{},
+		domainAccount.Account{},
+		domainTransaction.Transaction{},
+		domainTransaction.TransactionInquiry{},
 	)
 }
 
 func DropAllTable(db *gorm.DB) {
 	fmt.Println("Drpoping Table")
-	db.Migrator().DropTable()
+	db.Migrator().DropTable(
+		domainUser.User{},
+		domainAccount.Account{},
+		domainTransaction.Transaction{},
+		domainTransaction.TransactionInquiry{},
+	)
 }

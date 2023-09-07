@@ -8,6 +8,7 @@ const (
 	ErrRecordNotFound              = "0299"
 	ErrEmailAlreadyRegister        = "0300"
 	ErrInternalServer              = "5000"
+	ErrInsuficentBalance           = "0301"
 	ErrContextDeadlineExceeded     = "1002"
 	ErrUrlNotFound                 = "4040"
 	DescErrContextDeadlineExceeded = "context deadline exceeded"
