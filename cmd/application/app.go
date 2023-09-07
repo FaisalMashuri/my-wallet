@@ -5,10 +5,14 @@ import (
 	"github.com/FaisalMashuri/my-wallet/config"
 	"github.com/FaisalMashuri/my-wallet/infrastructure"
 	accountRepository "github.com/FaisalMashuri/my-wallet/internal/domain/account/repository"
+	notifRepository "github.com/FaisalMashuri/my-wallet/internal/domain/notification/repository"
 	transactionRepository "github.com/FaisalMashuri/my-wallet/internal/domain/transaction/repository"
 
+	notifController "github.com/FaisalMashuri/my-wallet/internal/domain/notification/controller"
+	notifService "github.com/FaisalMashuri/my-wallet/internal/domain/notification/service"
 	transactionController "github.com/FaisalMashuri/my-wallet/internal/domain/transaction/controller"
 	transactionService "github.com/FaisalMashuri/my-wallet/internal/domain/transaction/service"
+
 	userController "github.com/FaisalMashuri/my-wallet/internal/domain/user/controller"
 
 	userRepository "github.com/FaisalMashuri/my-wallet/internal/domain/user/repository"
@@ -43,18 +47,22 @@ func Run() {
 	userRepo := userRepository.NewRepository(db, log)
 	accountRepo := accountRepository.NewRepository(db)
 	transactionRepo := transactionRepository.NewRepository(db)
+	notifRepo := notifRepository.NewRepository(db)
 	//define service
 	userSvc := userService.NewService(userRepo, log, accountRepo)
-	transacetionSvc := transactionService.NewService(transactionRepo, accountRepo)
+	transacetionSvc := transactionService.NewService(transactionRepo, accountRepo, notifRepo)
+	notifSvc := notifService.NewService(notifRepo)
 
 	//define controller
 	userCtrl := userController.NewController(userSvc, log)
 	transactionCtrl := transactionController.NewController(transacetionSvc)
+	notifCtrl := notifController.NewController(notifSvc)
 
 	//define route
 	routeApp := router.NewRouter(router.RouteParams{
 		UserController:        userCtrl,
 		TransactionController: transactionCtrl,
+		NotifController:       notifCtrl,
 	})
 
 	routeApp.SetupRoute(app)
