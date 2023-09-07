@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/account"
+	"github.com/FaisalMashuri/my-wallet/internal/domain/notification"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction/dto/request"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction/dto/response"
@@ -18,6 +19,32 @@ import (
 type transactionService struct {
 	repoTransaction transaction.TransactionRepository
 	repoAccount     account.AccountRepository
+	repoNotif       notification.NotificationRepository
+}
+
+func (t *transactionService) NotificationAfterTransfer(sofAccount account.Account, dofAccount account.Account, amount float64) {
+	//TODO implement me
+	notificationSender := notification.Notification{
+		UserID: sofAccount.UserID,
+		Title:  "Transfer Berhasil",
+		Body:   fmt.Sprintf("Transfer senilai %.2f kepada %s berhasil", amount, dofAccount.AccountNumber),
+		IsRead: 0,
+	}
+	err := t.repoNotif.InsertNotification(&notificationSender)
+	if err != nil {
+		log.Println("Error notif sender : ", err.Error())
+	}
+
+	notificationReciever := notification.Notification{
+		UserID: dofAccount.UserID,
+		Title:  "Transfer Diterima",
+		Body:   fmt.Sprintf("Transfer senilai %.2f diterima dari %s", amount, sofAccount.AccountNumber),
+		IsRead: 0,
+	}
+	err = t.repoNotif.InsertNotification(&notificationReciever)
+	if err != nil {
+		log.Println("Error notif reciever : ", err.Error())
+	}
 }
 
 func (t transactionService) TranferInquiry(InquiryReq request.TransferInquiryReq, ctx *fiber.Ctx) (*response.TransferInquiryRes, error) {
@@ -155,12 +182,14 @@ func (t transactionService) TransferInquiryExec(InquiryExecReq request.TransferI
 
 		return err
 	}
+	go t.NotificationAfterTransfer(*myAccount, *dofAccount, inqReq.Amount)
 	return nil
 }
 
-func NewService(repoTransaction transaction.TransactionRepository, repoAccount account.AccountRepository) transaction.TransactionService {
+func NewService(repoTransaction transaction.TransactionRepository, repoAccount account.AccountRepository, repoNotif notification.NotificationRepository) transaction.TransactionService {
 	return &transactionService{
 		repoTransaction: repoTransaction,
 		repoAccount:     repoAccount,
+		repoNotif:       repoNotif,
 	}
 }

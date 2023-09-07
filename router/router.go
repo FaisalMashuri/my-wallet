@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/FaisalMashuri/my-wallet/config"
+	"github.com/FaisalMashuri/my-wallet/internal/domain/notification"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"github.com/FaisalMashuri/my-wallet/middleware"
@@ -14,6 +15,7 @@ import (
 type RouteParams struct {
 	UserController        user.UserController
 	TransactionController transaction.TransactionController
+	NotifController       notification.NotificationController
 }
 
 type router struct {
@@ -48,4 +50,5 @@ func (r *router) SetupRoute(app *fiber.App) {
 	v1.Use(middleware.NewAuthMiddleware(config.AppConfig.SecretKey))
 	v1.Post("/tranfer-inquiry", middleware.GetCredential, r.RouteParams.TransactionController.TransferInquiry)
 	v1.Post("/transfer-exec", middleware.GetCredential, r.RouteParams.TransactionController.TransferExec)
+	v1.Get("/notifications", middleware.GetCredential, r.RouteParams.NotifController.GetUserNotification)
 }

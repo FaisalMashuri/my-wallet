@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"github.com/FaisalMashuri/my-wallet/internal/domain/account"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction/dto/request"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction/dto/response"
 	"github.com/gofiber/fiber/v2"
@@ -19,6 +20,7 @@ type TransactionRepository interface {
 type TransactionService interface {
 	TranferInquiry(InquiryReq request.TransferInquiryReq, ctx *fiber.Ctx) (*response.TransferInquiryRes, error)
 	TransferInquiryExec(InquiryExecReq request.TransferInquiryExec, ctx *fiber.Ctx) error
+	NotificationAfterTransfer(sofAccount account.Account, dofAccount account.Account, amount float64)
 }
 
 type TransactionController interface {
