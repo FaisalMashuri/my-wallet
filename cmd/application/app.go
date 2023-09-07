@@ -32,13 +32,13 @@ func Run() {
 	app.Use(cors.New())
 
 	//define repository
-	userRepo := userRepository.NewRepository(db)
+	userRepo := userRepository.NewRepository(db, log)
 
 	//define service
-	userSvc := userService.NewService(userRepo)
+	userSvc := userService.NewService(userRepo, log)
 
 	//define controller
-	userCtrl := userController.NewController(userSvc)
+	userCtrl := userController.NewController(userSvc, log)
 
 	//define route
 	routeApp := router.NewRouter(router.RouteParams{

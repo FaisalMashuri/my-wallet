@@ -1,9 +1,9 @@
 package shared
 
 type BaseReponse struct {
-	Code    string      `json:"code"`
-	Status  string      `json:"status"`
-	Message string      `json:"message,omitempty"`
+	Code    string      `json:"responseCode"`
+	Status  string      `json:"responseStatus"`
+	Message string      `json:"responseMessage,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
 }
 

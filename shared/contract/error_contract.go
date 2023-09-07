@@ -6,6 +6,7 @@ const (
 	ErrPasswordNotMatch            = "1001"
 	ErrUnexpectedError             = "9999"
 	ErrRecordNotFound              = "0299"
+	ErrEmailAlreadyRegister        = "0300"
 	ErrInternalServer              = "5000"
 	ErrContextDeadlineExceeded     = "1002"
 	ErrUrlNotFound                 = "4040"

@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/FaisalMashuri/my-wallet/config"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
+	"github.com/FaisalMashuri/my-wallet/middleware"
 	"github.com/Saucon/errcntrct"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -38,5 +39,9 @@ func (r *router) SetupRoute(app *fiber.App) {
 	v1.Route("/auth", func(router fiber.Router) {
 		router.Post("/register", r.RouteParams.UserController.Register)
 		router.Post("/login", r.RouteParams.UserController.Login)
+		router.Use(middleware.NewAuthMiddleware(config.AppConfig.SecretKey))
+		router.Get("/token", middleware.GetCredential)
 	})
+
+	v1.Use(middleware.NewAuthMiddleware(config.AppConfig.SecretKey))
 }

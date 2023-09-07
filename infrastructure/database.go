@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"fmt"
 	"github.com/FaisalMashuri/my-wallet/config"
+	domainUser "github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -50,7 +51,9 @@ func ConnectDB() (*gorm.DB, error) {
 
 func AutoMigrate(db *gorm.DB) {
 	fmt.Println("migrasi")
-	db.Debug().AutoMigrate()
+	db.Debug().AutoMigrate(
+		domainUser.User{},
+	)
 }
 
 func DropAllTable(db *gorm.DB) {
