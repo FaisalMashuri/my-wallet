@@ -1,6 +1,7 @@
 package user
 
 import (
+	"database/sql"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/request"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/response"
 	"github.com/gofiber/fiber/v2"
@@ -11,9 +12,10 @@ import (
 
 type User struct {
 	gorm.Model
-	ID       string `gorm:"primary_key"`
-	Email    string
-	Password string
+	ID         string `gorm:"primary_key"`
+	Email      string
+	Password   string
+	verifiedAt sql.NullTime `gorm:"default:null"`
 }
 
 type UserRepository interface {

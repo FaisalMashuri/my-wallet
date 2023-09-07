@@ -29,6 +29,7 @@ func ErrorHandler(error error) (int, interface{}) {
 		code = e.Message
 
 	}
+	fmt.Println("CODE : ", code)
 
 	switch code {
 	case http.StatusMethodNotAllowed:
