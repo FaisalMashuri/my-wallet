@@ -5,7 +5,10 @@ import (
 	"github.com/FaisalMashuri/my-wallet/config"
 	"github.com/FaisalMashuri/my-wallet/infrastructure"
 	accountRepository "github.com/FaisalMashuri/my-wallet/internal/domain/account/repository"
+	"github.com/FaisalMashuri/my-wallet/internal/domain/notification/dto/response"
 	notifRepository "github.com/FaisalMashuri/my-wallet/internal/domain/notification/repository"
+	"github.com/FaisalMashuri/my-wallet/internal/domain/sse/controller"
+	"github.com/FaisalMashuri/my-wallet/internal/domain/sse/dto"
 	transactionRepository "github.com/FaisalMashuri/my-wallet/internal/domain/transaction/repository"
 
 	notifController "github.com/FaisalMashuri/my-wallet/internal/domain/notification/controller"
@@ -42,6 +45,7 @@ func Run() {
 		},
 	})
 	app.Use(cors.New())
+	hub := dto.Hub{NotificationChannel: map[string]chan response.NotificationDataRes{}}
 
 	//define repository
 	userRepo := userRepository.NewRepository(db, log)
@@ -50,19 +54,21 @@ func Run() {
 	notifRepo := notifRepository.NewRepository(db)
 	//define service
 	userSvc := userService.NewService(userRepo, log, accountRepo)
-	transacetionSvc := transactionService.NewService(transactionRepo, accountRepo, notifRepo)
+	transacetionSvc := transactionService.NewService(transactionRepo, accountRepo, notifRepo, &hub)
 	notifSvc := notifService.NewService(notifRepo)
 
 	//define controller
 	userCtrl := userController.NewController(userSvc, log)
 	transactionCtrl := transactionController.NewController(transacetionSvc)
 	notifCtrl := notifController.NewController(notifSvc)
+	notifSseCtrl := controller.NewNotification(&hub)
 
 	//define route
 	routeApp := router.NewRouter(router.RouteParams{
 		UserController:        userCtrl,
 		TransactionController: transactionCtrl,
 		NotifController:       notifCtrl,
+		NotifSseController:    notifSseCtrl,
 	})
 
 	routeApp.SetupRoute(app)

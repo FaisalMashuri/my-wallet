@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/account"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/notification"
+	notifResponse "github.com/FaisalMashuri/my-wallet/internal/domain/notification/dto/response"
+	"github.com/FaisalMashuri/my-wallet/internal/domain/sse/dto"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction/dto/request"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction/dto/response"
+
 	"github.com/FaisalMashuri/my-wallet/shared"
 	"github.com/FaisalMashuri/my-wallet/shared/contract"
 	"github.com/gofiber/fiber/v2"
@@ -20,6 +23,7 @@ type transactionService struct {
 	repoTransaction transaction.TransactionRepository
 	repoAccount     account.AccountRepository
 	repoNotif       notification.NotificationRepository
+	hub             *dto.Hub
 }
 
 func (t *transactionService) NotificationAfterTransfer(sofAccount account.Account, dofAccount account.Account, amount float64) {
@@ -34,7 +38,17 @@ func (t *transactionService) NotificationAfterTransfer(sofAccount account.Accoun
 	if err != nil {
 		log.Println("Error notif sender : ", err.Error())
 	}
-
+	if channel, ok := t.hub.NotificationChannel[sofAccount.UserID]; ok {
+		channel <- notifResponse.NotificationDataRes{
+			ID:        notificationSender.ID,
+			UserID:    sofAccount.UserID,
+			Title:     notificationSender.Title,
+			Body:      notificationSender.Body,
+			IsRead:    notificationSender.IsRead,
+			CreatedAt: notificationSender.CreatedAt,
+			Status:    notificationSender.Status,
+		}
+	}
 	notificationReciever := notification.Notification{
 		UserID: dofAccount.UserID,
 		Title:  "Transfer Diterima",
@@ -44,6 +58,17 @@ func (t *transactionService) NotificationAfterTransfer(sofAccount account.Accoun
 	err = t.repoNotif.InsertNotification(&notificationReciever)
 	if err != nil {
 		log.Println("Error notif reciever : ", err.Error())
+	}
+	if channel, ok := t.hub.NotificationChannel[dofAccount.UserID]; ok {
+		channel <- notifResponse.NotificationDataRes{
+			ID:        notificationReciever.ID,
+			UserID:    dofAccount.UserID,
+			Title:     notificationReciever.Title,
+			Body:      notificationReciever.Body,
+			IsRead:    notificationReciever.IsRead,
+			CreatedAt: notificationReciever.CreatedAt,
+			Status:    notificationReciever.Status,
+		}
 	}
 }
 
@@ -186,10 +211,11 @@ func (t transactionService) TransferInquiryExec(InquiryExecReq request.TransferI
 	return nil
 }
 
-func NewService(repoTransaction transaction.TransactionRepository, repoAccount account.AccountRepository, repoNotif notification.NotificationRepository) transaction.TransactionService {
+func NewService(repoTransaction transaction.TransactionRepository, repoAccount account.AccountRepository, repoNotif notification.NotificationRepository, hub *dto.Hub) transaction.TransactionService {
 	return &transactionService{
 		repoTransaction: repoTransaction,
 		repoAccount:     repoAccount,
 		repoNotif:       repoNotif,
+		hub:             hub,
 	}
 }

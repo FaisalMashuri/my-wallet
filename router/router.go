@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/FaisalMashuri/my-wallet/config"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/notification"
+	sseCtrl "github.com/FaisalMashuri/my-wallet/internal/domain/sse/controller"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"github.com/FaisalMashuri/my-wallet/middleware"
@@ -16,6 +17,7 @@ type RouteParams struct {
 	UserController        user.UserController
 	TransactionController transaction.TransactionController
 	NotifController       notification.NotificationController
+	NotifSseController    sseCtrl.NotificationSseController
 }
 
 type router struct {
@@ -51,4 +53,5 @@ func (r *router) SetupRoute(app *fiber.App) {
 	v1.Post("/tranfer-inquiry", middleware.GetCredential, r.RouteParams.TransactionController.TransferInquiry)
 	v1.Post("/transfer-exec", middleware.GetCredential, r.RouteParams.TransactionController.TransferExec)
 	v1.Get("/notifications", middleware.GetCredential, r.RouteParams.NotifController.GetUserNotification)
+	v1.Get("/notification-stream", middleware.GetCredential, r.RouteParams.NotifSseController.StreamNotifcation)
 }
