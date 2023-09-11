@@ -19,6 +19,7 @@ type Config struct {
 	AppEnv         string `env:"APP_ENV"`
 	SecretKey      string `env:"SECRET_KEY"`
 	ErrorContract  ErrorContract
+	Midtrans       MidtransConfig
 }
 
 type ErrorContract struct {
@@ -39,6 +40,13 @@ type RabbitMQ struct {
 	Port     string `env:"PORT_RABBIT"`
 	User     string `env:"USER_RABBIT"`
 	Password string `env:"PASSWORD_RABBIT"`
+}
+
+type MidtransConfig struct {
+	ServerKey  string `env:"MIDTRANS_SERVER_KEY"`
+	ClientKey  string `env:"MIDTRANS_CLIENT_KEY"`
+	MerchantID string `env:"MIDTRANS_MERCHANT_ID"`
+	Env        string `env:"MIDTRANS_ENV"`
 }
 
 func LoadConfig() error {
@@ -70,6 +78,11 @@ func LoadConfig() error {
 	}
 
 	err = env.Parse(&AppConfig.RabbitMQConfig)
+	if err != nil {
+		log.Default()
+		return err
+	}
+	err = env.Parse(&AppConfig.Midtrans)
 	if err != nil {
 		log.Default()
 		return err

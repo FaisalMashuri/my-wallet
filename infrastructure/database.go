@@ -5,6 +5,7 @@ import (
 	"github.com/FaisalMashuri/my-wallet/config"
 	domainAccount "github.com/FaisalMashuri/my-wallet/internal/domain/account"
 	domainNotification "github.com/FaisalMashuri/my-wallet/internal/domain/notification"
+	domainTopup "github.com/FaisalMashuri/my-wallet/internal/domain/topup"
 	domainTransaction "github.com/FaisalMashuri/my-wallet/internal/domain/transaction"
 	domainUser "github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"gorm.io/driver/postgres"
@@ -60,6 +61,7 @@ func AutoMigrate(db *gorm.DB) {
 		domainTransaction.Transaction{},
 		domainTransaction.TransactionInquiry{},
 		domainNotification.Notification{},
+		domainTopup.TopUp{},
 	)
 }
 
@@ -71,5 +73,7 @@ func DropAllTable(db *gorm.DB) {
 		domainTransaction.Transaction{},
 		domainTransaction.TransactionInquiry{},
 		domainNotification.Notification{},
+		domainTopup.TopUp{},
+
 	)
 }
