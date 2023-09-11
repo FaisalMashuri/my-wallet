@@ -2,8 +2,10 @@ package router
 
 import (
 	"github.com/FaisalMashuri/my-wallet/config"
+	midtrans_ext "github.com/FaisalMashuri/my-wallet/external/midtrans"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/notification"
 	sseCtrl "github.com/FaisalMashuri/my-wallet/internal/domain/sse/controller"
+	"github.com/FaisalMashuri/my-wallet/internal/domain/topup"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"github.com/FaisalMashuri/my-wallet/middleware"
@@ -18,6 +20,8 @@ type RouteParams struct {
 	TransactionController transaction.TransactionController
 	NotifController       notification.NotificationController
 	NotifSseController    sseCtrl.NotificationSseController
+	TopUpController       topup.TopUpController
+	MidtransController    midtrans_ext.MidtransController
 }
 
 type router struct {
@@ -41,6 +45,7 @@ func (r *router) SetupRoute(app *fiber.App) {
 
 	// Define routes with auth
 	v1 := app.Group("/api/v1")
+	v1.All("/midtrans/transfer-callback", r.RouteParams.MidtransController.PaymentHandlerNotification)
 
 	v1.Route("/auth", func(router fiber.Router) {
 		router.Post("/register", r.RouteParams.UserController.Register)
@@ -50,6 +55,7 @@ func (r *router) SetupRoute(app *fiber.App) {
 	})
 
 	v1.Use(middleware.NewAuthMiddleware(config.AppConfig.SecretKey))
+	v1.Post("/topup/initialize", middleware.GetCredential, r.RouteParams.TopUpController.InitializeTopUp)
 	v1.Post("/tranfer-inquiry", middleware.GetCredential, r.RouteParams.TransactionController.TransferInquiry)
 	v1.Post("/transfer-exec", middleware.GetCredential, r.RouteParams.TransactionController.TransferExec)
 	v1.Get("/notifications", middleware.GetCredential, r.RouteParams.NotifController.GetUserNotification)
