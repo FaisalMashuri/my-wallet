@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/FaisalMashuri/my-wallet/config"
 	domainAccount "github.com/FaisalMashuri/my-wallet/internal/domain/account"
+	domainmPin "github.com/FaisalMashuri/my-wallet/internal/domain/mpin"
 	domainNotification "github.com/FaisalMashuri/my-wallet/internal/domain/notification"
 	domainTopup "github.com/FaisalMashuri/my-wallet/internal/domain/topup"
 	domainTransaction "github.com/FaisalMashuri/my-wallet/internal/domain/transaction"
@@ -44,12 +45,13 @@ func ConnectDB() (*gorm.DB, error) {
 		return nil, err
 	}
 
-	fmt.Println(os.Args[len(os.Args)-1])
-	if os.Args[len(os.Args)-1] == "--migrate" {
-		AutoMigrate(db)
-	} else if os.Args[len(os.Args)-1] == "--droptable" {
-		DropAllTable(db)
-	}
+	//
+	//if os.Args[len(os.Args)-1] == "--migrate" {
+	//	AutoMigrate(db)
+	//} else if os.Args[len(os.Args)-1] == "--droptable" {
+	//	DropAllTable(db)
+	//}
+	AutoMigrate(db)
 	return db, nil
 }
 
@@ -62,6 +64,7 @@ func AutoMigrate(db *gorm.DB) {
 		domainTransaction.TransactionInquiry{},
 		domainNotification.Notification{},
 		domainTopup.TopUp{},
+		domainmPin.Pin{},
 	)
 }
 
@@ -74,6 +77,5 @@ func DropAllTable(db *gorm.DB) {
 		domainTransaction.TransactionInquiry{},
 		domainNotification.Notification{},
 		domainTopup.TopUp{},
-
 	)
 }

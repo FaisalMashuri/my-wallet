@@ -9,6 +9,7 @@ const (
 	ErrEmailAlreadyRegister = "0300"
 	ErrInsuficentBalance    = "0301"
 	ErrLimitAccountOpen     = "0302"
+	ErrInvalidPin           = "0303"
 
 	ErrMethodNotAllowed       = "4050"
 	ErrUrlNotFound            = "4040"

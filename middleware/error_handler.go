@@ -56,6 +56,8 @@ func ErrorHandler(error error) (int, interface{}) {
 		return errcntrct.ErrorMessage(http.StatusUnauthorized, "", errors.New(contract.ErrTransactionUnauthoried))
 	case contract.ErrBadRequest:
 		return errcntrct.ErrorMessage(http.StatusBadRequest, "", errors.New(contract.ErrBadRequest))
+	case contract.ErrInvalidPin:
+		return errcntrct.ErrorMessage(http.StatusBadRequest, "", errors.New(contract.ErrInvalidPin))
 	case contract.ErrLimitAccountOpen:
 		return errcntrct.ErrorMessage(http.StatusInternalServerError, "", errors.New(contract.ErrLimitAccountOpen))
 	default:

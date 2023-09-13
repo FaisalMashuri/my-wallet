@@ -4,6 +4,7 @@ import (
 	"github.com/FaisalMashuri/my-wallet/config"
 	midtrans_ext "github.com/FaisalMashuri/my-wallet/external/midtrans"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/account"
+	"github.com/FaisalMashuri/my-wallet/internal/domain/mpin"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/notification"
 	sseCtrl "github.com/FaisalMashuri/my-wallet/internal/domain/sse/controller"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/topup"
@@ -25,6 +26,7 @@ type RouteParams struct {
 	TopUpController       topup.TopUpController
 	MidtransController    midtrans_ext.MidtransController
 	AccountController     account.AccountController
+	PinController         mpin.PinController
 }
 
 type router struct {
@@ -71,10 +73,11 @@ func (r *router) SetupRoute(app *fiber.App) {
 		router.Use(middleware.NewAuthMiddleware(config.AppConfig.SecretKey))
 		router.Get("/token", middleware.GetCredential)
 	})
+	v1.Post("/users/pin", r.RouteParams.PinController.CreatePin)
 
 	v1.Use(middleware.NewAuthMiddleware(config.AppConfig.SecretKey))
-	v1.Post("/accounts", middleware.GetCredential, r.RouteParams.AccountController.CreateAccount)
 	v1.Get("/users/detail", middleware.GetCredential, r.RouteParams.UserController.GetDetailUserJWT)
+	v1.Post("/users/accounts", middleware.GetCredential, r.RouteParams.AccountController.CreateAccount)
 	v1.Post("/topup/initialize", middleware.GetCredential, r.RouteParams.TopUpController.InitializeTopUp)
 	v1.Post("/tranfer-inquiry", middleware.GetCredential, r.RouteParams.TransactionController.TransferInquiry)
 	v1.Post("/transfer-exec", middleware.GetCredential, r.RouteParams.TransactionController.TransferExec)

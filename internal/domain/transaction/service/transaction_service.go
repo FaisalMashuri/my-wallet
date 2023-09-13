@@ -136,8 +136,6 @@ func (t transactionService) TransferInquiryExec(InquiryExecReq request.TransferI
 		return errors.New(contract.ErrRecordNotFound)
 	}
 
-	fmt.Println("data inquiry : ", dataInquiry.Value)
-
 	var inqReq request.TransferInquiryReq
 	err = json.Unmarshal([]byte(dataInquiry.Value), &inqReq)
 	if err != nil {

@@ -2,6 +2,7 @@
   "1000": {"var": "ErrInvalidRequestFamily", "msg": "Invalid request"},
   "4000": {"var": "ErrUnauthorized", "msg": "The request is malformed or contains invalid data."},
   "0302": {"var": "ErrLimitAccountOpen", "msg": "You have reach limit to open new account, only 2 accounts each user"},
+  "0303": {"var": "ErrInvalidPin", "msg": "Invalid pin number"},
   "4010": {"var": "ErrUnauthorized", "msg": "Unauthorized"},
   "4011": {"var": "ErrTransactionUnathorized", "msg": "Transaction Unauthorized, insert your valid account number"},
   "4050": {"var": "ErrMethodNotAllowed", "msg": "Method Not Allowed"},
