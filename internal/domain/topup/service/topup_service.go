@@ -79,8 +79,11 @@ func (t topUpService) ConfirmedTopUp(id string) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(accountData)
+	topUp.Status = 1
+	err = t.topUpRepository.Update(topUp)
+	if err != nil {
+		return err
+	}
 	go t.NotificationAfterTransfer(*accountData, topUp.Amount)
 	return nil
 }
