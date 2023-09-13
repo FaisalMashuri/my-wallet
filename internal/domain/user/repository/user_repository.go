@@ -50,6 +50,13 @@ func (r *userRepository) UpdateUser(updatedUser *user.User) (*user.User, error) 
 }
 
 func (r *userRepository) GetUserByID(id string) (user *user.User, err error) {
+	err = r.db.Debug().First(&user, "id = ?", id).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return user, nil
+		}
+		return nil, err
+	}
 	return user, nil
 }
 

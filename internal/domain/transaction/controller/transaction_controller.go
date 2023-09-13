@@ -1,15 +1,21 @@
 package controller
 
 import (
+	"fmt"
+	"github.com/FaisalMashuri/my-wallet/internal/domain/mpin"
+	mPinRequest "github.com/FaisalMashuri/my-wallet/internal/domain/mpin/dto/request"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction/dto/request"
+	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"github.com/FaisalMashuri/my-wallet/shared"
+	"github.com/FaisalMashuri/my-wallet/shared/contract"
 	"github.com/gofiber/fiber/v2"
 	"net/http"
 )
 
 type transactionController struct {
-	service transaction.TransactionService
+	service     transaction.TransactionService
+	servicemPin mpin.PinService
 }
 
 func (t *transactionController) TransferInquiry(ctx *fiber.Ctx) error {
@@ -17,34 +23,55 @@ func (t *transactionController) TransferInquiry(ctx *fiber.Ctx) error {
 	var inquiryReq request.TransferInquiryReq
 	err := ctx.BodyParser(&inquiryReq)
 	if err != nil {
-		return err
+		return fiber.NewError(400, contract.ErrBadRequest)
+
 	}
 	res, err := t.service.TranferInquiry(inquiryReq, ctx)
 	if err != nil {
-		return err
+		if err.Error() == contract.ErrRecordNotFound {
+			return fiber.NewError(404, err.Error())
+		}
+		return fiber.NewError(500, err.Error())
 	}
 	resp := shared.SuccessResponse("Success", "Transfer Inquiry berhaisl", res)
 	return ctx.Status(http.StatusOK).JSON(resp)
-	panic("implement me")
+
 }
 
 func (t *transactionController) TransferExec(ctx *fiber.Ctx) error {
 	//TODO implement me
+	var mpinReq mPinRequest.ValidatePinReq
+	credentialuser := ctx.Locals("credentials").(user.User)
+
 	var inquiryExecReq request.TransferInquiryExec
 	err := ctx.BodyParser(&inquiryExecReq)
 	if err != nil {
-		return err
+		return fiber.NewError(400, contract.ErrBadRequest)
+	}
+
+	fmt.Println("INQUIRY KEY : ", inquiryExecReq)
+	mpinReq.Pin = inquiryExecReq.Pin
+	mpinReq.UserId = credentialuser.ID
+	err = t.servicemPin.ValidatePin(&mpinReq)
+	if err != nil {
+		return fiber.NewError(400, contract.ErrInvalidPin)
 	}
 	err = t.service.TransferInquiryExec(inquiryExecReq, ctx)
+
 	if err != nil {
-		return err
+		if err.Error() == contract.ErrRecordNotFound {
+			return fiber.NewError(404, err.Error())
+		}
+		return fiber.NewError(500, err.Error())
 	}
-	return ctx.JSON("OK")
-	panic("implement me")
+	resp := shared.SuccessResponse("Success", "Transfer successfully", nil)
+	return ctx.Status(http.StatusOK).JSON(resp)
+
 }
 
-func NewController(service transaction.TransactionService) transaction.TransactionController {
+func NewController(service transaction.TransactionService, servicePin mpin.PinService) transaction.TransactionController {
 	return &transactionController{
-		service: service,
+		service:     service,
+		servicemPin: servicePin,
 	}
 }

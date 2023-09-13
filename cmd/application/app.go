@@ -6,6 +6,9 @@ import (
 	midtransService "github.com/FaisalMashuri/my-wallet/external/midtrans/service"
 	"github.com/FaisalMashuri/my-wallet/infrastructure"
 	accountRepository "github.com/FaisalMashuri/my-wallet/internal/domain/account/repository"
+	mPinController "github.com/FaisalMashuri/my-wallet/internal/domain/mpin/controller"
+	mPinRepository "github.com/FaisalMashuri/my-wallet/internal/domain/mpin/repository"
+	mPinService "github.com/FaisalMashuri/my-wallet/internal/domain/mpin/service"
 	notifController "github.com/FaisalMashuri/my-wallet/internal/domain/notification/controller"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/notification/dto/response"
 	notifRepository "github.com/FaisalMashuri/my-wallet/internal/domain/notification/repository"
@@ -15,13 +18,16 @@ import (
 	topupController "github.com/FaisalMashuri/my-wallet/internal/domain/topup/controller"
 	topupRepository "github.com/FaisalMashuri/my-wallet/internal/domain/topup/repository"
 	topupService "github.com/FaisalMashuri/my-wallet/internal/domain/topup/service"
+
 	transactionController "github.com/FaisalMashuri/my-wallet/internal/domain/transaction/controller"
 	transactionRepository "github.com/FaisalMashuri/my-wallet/internal/domain/transaction/repository"
 	transactionService "github.com/FaisalMashuri/my-wallet/internal/domain/transaction/service"
 
 	midtransController "github.com/FaisalMashuri/my-wallet/external/midtrans/controller"
+	accountController "github.com/FaisalMashuri/my-wallet/internal/domain/account/controller"
 	userController "github.com/FaisalMashuri/my-wallet/internal/domain/user/controller"
 
+	accountService "github.com/FaisalMashuri/my-wallet/internal/domain/account/service"
 	userRepository "github.com/FaisalMashuri/my-wallet/internal/domain/user/repository"
 	userService "github.com/FaisalMashuri/my-wallet/internal/domain/user/service"
 
@@ -32,6 +38,16 @@ import (
 	"os"
 )
 
+// @title Fiber Example API
+// @version 1.0
+// @description This is a sample swagger for Fiber
+// @termsOfService http://swagger.io/terms/
+// @contact.name API Support
+// @contact.email fiber@swagger.io
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+// @host localhost:8080
+// @BasePath /
 func Run() {
 	err := config.LoadConfig()
 	if err != nil {
@@ -57,6 +73,7 @@ func Run() {
 	transactionRepo := transactionRepository.NewRepository(db)
 	notifRepo := notifRepository.NewRepository(db)
 	topupRepo := topupRepository.NewRepository(db)
+	mPinRepo := mPinRepository.NewRepository(db)
 
 	//define service
 	userSvc := userService.NewService(userRepo, log, accountRepo)
@@ -64,14 +81,18 @@ func Run() {
 	notifSvc := notifService.NewService(notifRepo)
 	midtransSvc := midtransService.NewService()
 	topUpSvc := topupService.NewService(topupRepo, midtransSvc, notifRepo, accountRepo, &hub)
+	accountSvc := accountService.NewService(accountRepo)
+	mPinSvc := mPinService.NewService(mPinRepo)
 
 	//define controller
 	userCtrl := userController.NewController(userSvc, log)
-	transactionCtrl := transactionController.NewController(transacetionSvc)
+	transactionCtrl := transactionController.NewController(transacetionSvc, mPinSvc)
 	notifCtrl := notifController.NewController(notifSvc)
 	notifSseCtrl := controller.NewNotification(&hub)
 	topUpCtrl := topupController.NewController(topUpSvc)
 	midtransCtrl := midtransController.NewController(midtransSvc, topUpSvc)
+	accountCtrl := accountController.NewController(accountSvc)
+	mPinCtrl := mPinController.NewController(mPinSvc)
 	//define route
 	routeApp := router.NewRouter(router.RouteParams{
 		UserController:        userCtrl,
@@ -80,6 +101,8 @@ func Run() {
 		NotifSseController:    notifSseCtrl,
 		TopUpController:       topUpCtrl,
 		MidtransController:    midtransCtrl,
+		AccountController:     accountCtrl,
+		PinController:         mPinCtrl,
 	})
 
 	routeApp.SetupRoute(app)

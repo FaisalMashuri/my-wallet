@@ -8,4 +8,5 @@ type TransferInquiryReq struct {
 
 type TransferInquiryExec struct {
 	InquiryKey string `json:"inquiryKey"`
+	Pin        string `json:"pin"`
 }

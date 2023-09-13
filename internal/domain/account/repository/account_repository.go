@@ -49,7 +49,17 @@ func (a *accountRepository) FindAccountByAccountNumber(accountNumber string) (*a
 		return nil, err
 	}
 	return &accountModel, nil
+}
 
+func (a *accountRepository) FindAllAccountsByUserId(userId string) (accountModel []*account.Account, err error) {
+	err = a.db.Debug().Find(&accountModel, "user_id = ?", userId).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return accountModel, nil
+		}
+		return nil, err
+	}
+	return
 }
 
 func (a *accountRepository) UpdateBalance(accountData account.Account) (*account.Account, error) {
@@ -59,4 +69,12 @@ func (a *accountRepository) UpdateBalance(accountData account.Account) (*account
 		return nil, err
 	}
 	return &accountData, nil
+}
+
+func (a *accountRepository) CountAccountNumberByUserId(userId string) (totalData int64, err error) {
+	err = a.db.Debug().Model(&account.Account{}).Where("user_id = ?", userId).Count(&totalData).Error
+	if err != nil {
+		return 0, err
+	}
+	return totalData, nil
 }
