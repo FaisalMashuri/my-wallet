@@ -3,6 +3,8 @@ package middleware
 import (
 	"fmt"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
+	"github.com/FaisalMashuri/my-wallet/shared"
+	"github.com/FaisalMashuri/my-wallet/shared/contract"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -14,7 +16,8 @@ func NewAuthMiddleware(secret string) fiber.Handler {
 	return jwtware.New(jwtware.Config{
 		SigningKey: jwtware.SigningKey{Key: []byte(secret)},
 		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
-			return ctx.Status(fiber.StatusUnauthorized).JSON(err)
+			resp := shared.ErrorResponse(contract.ErrUnauthorized, "Unauthorized", err.Error())
+			return ctx.Status(401).JSON(resp)
 		},
 	})
 }

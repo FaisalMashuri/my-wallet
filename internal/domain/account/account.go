@@ -1,6 +1,7 @@
 package account
 
 import (
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -8,8 +9,17 @@ import (
 type AccountRepository interface {
 	CreateAccount(accountData Account) (*Account, error)
 	FindAccountByUserId(userId string) (*Account, error)
+	FindAllAccountsByUserId(userId string) ([]*Account, error)
 	FindAccountByAccountNumber(accountNumber string) (*Account, error)
 	UpdateBalance(accountData Account) (*Account, error)
+	CountAccountNumberByUserId(userId string) (int64, error)
+}
+
+type AccountService interface {
+	CreateAccount(userId string) (*Account, error)
+}
+type AccountController interface {
+	CreateAccount(ctx *fiber.Ctx) error
 }
 
 type Account struct {

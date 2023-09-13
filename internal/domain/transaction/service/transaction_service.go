@@ -10,6 +10,7 @@ import (
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction/dto/request"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction/dto/response"
+	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 
 	"github.com/FaisalMashuri/my-wallet/shared"
 	"github.com/FaisalMashuri/my-wallet/shared/contract"
@@ -74,13 +75,16 @@ func (t *transactionService) NotificationAfterTransfer(sofAccount account.Accoun
 
 func (t transactionService) TranferInquiry(InquiryReq request.TransferInquiryReq, ctx *fiber.Ctx) (*response.TransferInquiryRes, error) {
 	//TODO implement me
-	//credentialuser := ctx.Locals("credentials").(user.User)
+	credentialuser := ctx.Locals("credentials").(user.User)
 	myAccount, err := t.repoAccount.FindAccountByAccountNumber(InquiryReq.SofAccountNumber)
 	if myAccount == nil {
 		if err != nil {
 			return nil, err
 		}
 		return nil, errors.New(contract.ErrRecordNotFound)
+	}
+	if myAccount.UserID != credentialuser.ID {
+		return nil, errors.New(contract.ErrTransactionUnauthoried)
 	}
 
 	dofAccount, err := t.repoAccount.FindAccountByAccountNumber(InquiryReq.DofAccountNumber)
@@ -124,10 +128,14 @@ func (t transactionService) TransferInquiryExec(InquiryExecReq request.TransferI
 	//TODO implement me
 
 	dataInquiry, err := t.repoTransaction.FindTransactionInquiry(InquiryExecReq.InquiryKey)
-	if err != nil {
-		log.Println("Error  Find Inquiry: ", err.Error())
-		return err
+	if dataInquiry == nil {
+		if err != nil {
+			log.Println("Error  Find Inquiry: ", err.Error())
+			return errors.New(contract.ErrInternalServer)
+		}
+		return errors.New(contract.ErrRecordNotFound)
 	}
+
 	fmt.Println("data inquiry : ", dataInquiry.Value)
 
 	var inqReq request.TransferInquiryReq

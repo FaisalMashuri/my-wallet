@@ -24,9 +24,10 @@ func NewErrorhandler(ctx *fiber.Ctx, err error) error {
 func ErrorHandler(error error) (int, interface{}) {
 	var e *fiber.Error
 	var code interface{}
-
+	fmt.Println("ERROR : ", e)
 	if errors.As(error, &e) {
 		code = e.Message
+		fmt.Println("CODE ERROR : ", e.Code)
 
 	}
 	fmt.Println("CODE : ", code)
@@ -49,11 +50,17 @@ func ErrorHandler(error error) (int, interface{}) {
 		return errcntrct.ErrorMessage(http.StatusInternalServerError, "", errors.New(contract.ErrInternalServer))
 	case contract.ErrContextDeadlineExceeded:
 		return errcntrct.ErrorMessage(http.StatusGatewayTimeout, "", errors.New(contract.ErrContextDeadlineExceeded))
-	}
-	if code == nil {
-		code = "9999"
-	}
+	case contract.ErrUnauthorized:
+		return errcntrct.ErrorMessage(http.StatusUnauthorized, "", errors.New(contract.ErrUnauthorized))
+	case contract.ErrTransactionUnauthoried:
+		return errcntrct.ErrorMessage(http.StatusUnauthorized, "", errors.New(contract.ErrTransactionUnauthoried))
+	case contract.ErrBadRequest:
+		return errcntrct.ErrorMessage(http.StatusBadRequest, "", errors.New(contract.ErrBadRequest))
+	case contract.ErrLimitAccountOpen:
+		return errcntrct.ErrorMessage(http.StatusInternalServerError, "", errors.New(contract.ErrLimitAccountOpen))
+	default:
+		return errcntrct.ErrorMessage(9999, "", errors.New(contract.ErrUnexpectedError))
 
-	return errcntrct.ErrorMessage(9999, "", errors.New(contract.ErrUnexpectedError))
+	}
 
 }

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/request"
 	"github.com/FaisalMashuri/my-wallet/shared"
@@ -55,5 +56,16 @@ func (c *userController) Register(ctx *fiber.Ctx) error {
 		return fiber.NewError(errCode, err.Error())
 	}
 	resp := shared.SuccessResponse("Succes", "Succes registration user", userData.ToRegisterResponse())
+	return ctx.Status(200).JSON(resp)
+}
+
+func (c *userController) GetDetailUserJWT(ctx *fiber.Ctx) error {
+	credentialuser := ctx.Locals("credentials").(user.User)
+	fmt.Println("CREDENTIAL : ", credentialuser)
+	res, err := c.service.GetDetailUserById(credentialuser.ID)
+	if err != nil {
+		return fiber.NewError(500, err.Error())
+	}
+	resp := shared.SuccessResponse("Success", "Success get detail user", res)
 	return ctx.Status(200).JSON(resp)
 }

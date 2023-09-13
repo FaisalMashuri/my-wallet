@@ -1,10 +1,13 @@
 package service
 
 import (
+	"fmt"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/account"
+	dtoResAccount "github.com/FaisalMashuri/my-wallet/internal/domain/account/dto/response"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/request"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/response"
+
 	"github.com/FaisalMashuri/my-wallet/shared"
 	"github.com/FaisalMashuri/my-wallet/shared/contract"
 	"github.com/pkg/errors"
@@ -42,6 +45,7 @@ func (s *userService) Login(userRequest *request.LoginRequest) (*response.LoginR
 		s.log.Info("Password mismatch")
 		return nil, errors.New(contract.ErrPasswordNotMatch)
 	}
+
 	accessToken, err := shared.GenerateAccessToken(userData)
 	if err != nil {
 		s.log.Info("faile generate token")
@@ -92,4 +96,33 @@ func (s *userService) RegisterUser(userRequest *request.RegisterRequest) (userDa
 	}
 
 	return userData, nil
+}
+
+func (s *userService) GetDetailUserById(id string) (res response.UserDetail, err error) {
+	userData, err := s.repo.GetUserByID(id)
+	if userData == nil {
+		if err != nil {
+			return res, errors.New(contract.ErrInternalServer)
+		}
+		return res, errors.New(contract.ErrRecordNotFound)
+	}
+	fmt.Println("USER : ", userData)
+	acc, err := s.repoAccount.FindAllAccountsByUserId(userData.ID)
+	if acc == nil {
+		if err != nil {
+			return res, errors.New(contract.ErrInternalServer)
+		}
+		return res, errors.New(contract.ErrRecordNotFound)
+	}
+	res.Email = userData.Email
+	res.ID = userData.ID
+	for _, accountData := range acc {
+		resAccount := dtoResAccount.AccountResponse{
+			ID:            accountData.ID,
+			AccountNumber: accountData.AccountNumber,
+			Balance:       accountData.Balance,
+		}
+		res.Account = append(res.Account, resAccount)
+	}
+	return
 }

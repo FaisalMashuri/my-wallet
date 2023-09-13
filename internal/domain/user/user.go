@@ -30,11 +30,13 @@ type UserRepository interface {
 type UserService interface {
 	Login(userRequest *request.LoginRequest) (res *response.LoginResponse, err error)
 	RegisterUser(userRequest *request.RegisterRequest) (user *User, err error)
+	GetDetailUserById(id string) (user response.UserDetail, err error)
 }
 
 type UserController interface {
 	Login(ctx *fiber.Ctx) error
 	Register(ctx *fiber.Ctx) error
+	GetDetailUserJWT(ctx *fiber.Ctx) error
 }
 
 func (u *User) FromRegistRequest(req *request.RegisterRequest) User {
