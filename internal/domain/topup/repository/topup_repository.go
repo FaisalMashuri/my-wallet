@@ -11,7 +11,7 @@ type topUpRepository struct {
 
 func (t *topUpRepository) FindById(id string) (topUp *topup.TopUp, err error) {
 	//TODO implement me
-	err = t.db.Debug().First(&topUp).Error
+	err = t.db.Debug().Where("status = ", 0).First(&topUp, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
