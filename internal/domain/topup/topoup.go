@@ -25,11 +25,12 @@ type TopUpController interface {
 
 type TopUp struct {
 	gorm.Model
-	ID      string  `gorm:"primary_key"`
-	UserID  string  `gorm:"user_id"`
-	Status  int     `gorm:"status"`
-	Amount  float64 `gorm:"amount"`
-	SnapURL string  `gorm:"snap_url"`
+	ID            string  `gorm:"primary_key"`
+	UserID        string  `gorm:"user_id"`
+	AccountNumber string  `gorm:"account_number"`
+	Status        int     `gorm:"status"`
+	Amount        float64 `gorm:"amount"`
+	SnapURL       string  `gorm:"snap_url"`
 }
 
 func (t *TopUp) BeforeCreate() error {
