@@ -67,7 +67,7 @@ func (t topUpService) ConfirmedTopUp(id string) error {
 		return errors.New(contract.ErrRecordNotFound)
 	}
 	fmt.Println()
-	accountData, err := t.accountRepository.FindAccountByUserId(topUp.UserID)
+	accountData, err := t.accountRepository.FindAccountByAccountNumber(topUp.AccountNumber)
 	if err != nil {
 		return err
 	}
@@ -91,10 +91,11 @@ func (t topUpService) ConfirmedTopUp(id string) error {
 func (t topUpService) InitializeTopUp(req request.TopUpRequest) (response.TopUpResponnse, error) {
 	//TODO implement me
 	topUp := topup.TopUp{
-		ID:     uuid.New().String(),
-		UserID: req.UserID,
-		Status: 0,
-		Amount: req.Amount,
+		ID:            uuid.New().String(),
+		UserID:        req.UserID,
+		Status:        0,
+		AccountNumber: req.AccountNumber,
+		Amount:        req.Amount,
 	}
 	err := t.midtransService.GenerateSnapURL(&topUp)
 	if err != nil {
