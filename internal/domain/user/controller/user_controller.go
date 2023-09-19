@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/request"
+	"github.com/FaisalMashuri/my-wallet/middleware"
 	"github.com/FaisalMashuri/my-wallet/shared"
 	"github.com/FaisalMashuri/my-wallet/shared/contract"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
+	"net/http"
 	"strconv"
 )
 
@@ -31,6 +33,11 @@ func (c *userController) Login(ctx *fiber.Ctx) error {
 		errCode, _ := strconv.Atoi(err.Error())
 		return fiber.NewError(errCode, contract.ErrInvalidRequestFamily)
 	}
+	fieldErr, err := middleware.ValidateRequest(loginReq)
+	fmt.Println("FIELD ERR  : ", fieldErr)
+	if err != nil {
+		return fiber.NewError(http.StatusBadRequest, fmt.Sprintf("%s,%s", err.Error(), fieldErr))
+	}
 	res, err := c.service.Login(&loginReq)
 	if err != nil {
 		c.log.WithField("error", err.Error()).Info("login failed " + err.Error())
@@ -48,6 +55,10 @@ func (c *userController) Register(ctx *fiber.Ctx) error {
 		c.log.WithField("error", err.Error()).Fatal("error parsing request body")
 		errCode, _ := strconv.Atoi(err.Error())
 		return fiber.NewError(errCode, contract.ErrInvalidRequestFamily)
+	}
+	fieldErr, err := middleware.ValidateRequest(regisRequest)
+	if err != nil {
+		return fiber.NewError(http.StatusBadRequest, fmt.Sprintf("%s,%s", err.Error(), fieldErr))
 	}
 	userData, err := c.service.RegisterUser(&regisRequest)
 	if err != nil {

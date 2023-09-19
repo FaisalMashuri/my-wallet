@@ -1,12 +1,15 @@
 package service
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/account"
 	dtoResAccount "github.com/FaisalMashuri/my-wallet/internal/domain/account/dto/response"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/request"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/response"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/FaisalMashuri/my-wallet/shared"
 	"github.com/FaisalMashuri/my-wallet/shared/contract"
@@ -19,13 +22,15 @@ type userService struct {
 	repo        user.UserRepository
 	repoAccount account.AccountRepository
 	log         *logrus.Logger
+	redisClient *redis.Client
 }
 
-func NewService(repo user.UserRepository, log *logrus.Logger, repoAccount account.AccountRepository) user.UserService {
+func NewService(repo user.UserRepository, log *logrus.Logger, repoAccount account.AccountRepository, redis *redis.Client) user.UserService {
 	return &userService{
 		repo:        repo,
 		repoAccount: repoAccount,
 		log:         log,
+		redisClient: redis,
 	}
 }
 
@@ -99,30 +104,52 @@ func (s *userService) RegisterUser(userRequest *request.RegisterRequest) (userDa
 }
 
 func (s *userService) GetDetailUserById(id string) (res response.UserDetail, err error) {
-	userData, err := s.repo.GetUserByID(id)
-	if userData == nil {
-		if err != nil {
-			return res, errors.New(contract.ErrInternalServer)
+	var userData *user.User
+	ctx := context.Background()
+	val, err := s.redisClient.Get(ctx, id).Result()
+	if err != nil {
+		if err == redis.Nil {
+			fmt.Println("data tidak ditemukan di cache")
+			userData, err = s.repo.GetUserByID(id)
+			if userData == nil {
+				if err != nil {
+					return res, errors.New(contract.ErrInternalServer)
+				}
+				return res, errors.New(contract.ErrRecordNotFound)
+			}
+			fmt.Println("USER : ", userData)
+			acc, err := s.repoAccount.FindAllAccountsByUserId(userData.ID)
+			if acc == nil {
+				if err != nil {
+					return res, errors.New(contract.ErrInternalServer)
+				}
+				return res, errors.New(contract.ErrRecordNotFound)
+			}
+			res.Email = userData.Email
+			res.ID = userData.ID
+			for _, accountData := range acc {
+				resAccount := dtoResAccount.AccountResponse{
+					ID:            accountData.ID,
+					AccountNumber: accountData.AccountNumber,
+					Balance:       accountData.Balance,
+				}
+				res.Account = append(res.Account, resAccount)
+			}
+			data, _ := json.Marshal(res)
+			_, err = s.redisClient.Set(ctx, id, data, 0).Result()
+			if err != nil {
+				s.log.Error("Error save to cache")
+			}
+			return res, err
+
 		}
-		return res, errors.New(contract.ErrRecordNotFound)
 	}
-	fmt.Println("USER : ", userData)
-	acc, err := s.repoAccount.FindAllAccountsByUserId(userData.ID)
-	if acc == nil {
-		if err != nil {
-			return res, errors.New(contract.ErrInternalServer)
-		}
-		return res, errors.New(contract.ErrRecordNotFound)
+	err = json.Unmarshal([]byte(val), &res)
+	if err != nil {
+		return
 	}
-	res.Email = userData.Email
-	res.ID = userData.ID
-	for _, accountData := range acc {
-		resAccount := dtoResAccount.AccountResponse{
-			ID:            accountData.ID,
-			AccountNumber: accountData.AccountNumber,
-			Balance:       accountData.Balance,
-		}
-		res.Account = append(res.Account, resAccount)
-	}
-	return
+	fmt.Println("data dari redis : ", res)
+
+	return res, nil
+
 }
