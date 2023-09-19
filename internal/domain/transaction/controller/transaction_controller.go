@@ -7,6 +7,7 @@ import (
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction/dto/request"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
+	"github.com/FaisalMashuri/my-wallet/middleware"
 	"github.com/FaisalMashuri/my-wallet/shared"
 	"github.com/FaisalMashuri/my-wallet/shared/contract"
 	"github.com/gofiber/fiber/v2"
@@ -25,6 +26,11 @@ func (t *transactionController) TransferInquiry(ctx *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(400, contract.ErrBadRequest)
 
+	}
+	fieldErr, err := middleware.ValidateRequest(inquiryReq)
+	fmt.Println("FIELD Error : ", fieldErr)
+	if err != nil {
+		return fiber.NewError(http.StatusBadRequest, fmt.Sprintf("%s,%s", err.Error(), fieldErr))
 	}
 	res, err := t.service.TranferInquiry(inquiryReq, ctx)
 	if err != nil {
@@ -47,6 +53,10 @@ func (t *transactionController) TransferExec(ctx *fiber.Ctx) error {
 	err := ctx.BodyParser(&inquiryExecReq)
 	if err != nil {
 		return fiber.NewError(400, contract.ErrBadRequest)
+	}
+	fieldErr, err := middleware.ValidateRequest(inquiryExecReq)
+	if err != nil {
+		return fiber.NewError(http.StatusBadRequest, fmt.Sprintf("%s,%s", err.Error(), fieldErr))
 	}
 
 	fmt.Println("INQUIRY KEY : ", inquiryExecReq)

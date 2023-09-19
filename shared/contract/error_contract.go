@@ -16,6 +16,9 @@ const (
 	ErrUnauthorized           = "4010"
 	ErrTransactionUnauthoried = "4011"
 	ErrBadRequest             = "4000"
+	ErrMandatory              = "4001"
+	ErrFormatField            = "4002"
+	ErrMinFormat              = "4003"
 
 	ErrInternalServer = "5000"
 

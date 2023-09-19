@@ -46,12 +46,12 @@ func ConnectDB() (*gorm.DB, error) {
 	}
 
 	//
-	if os.Args[len(os.Args)-1] == "--migrate" {
-		AutoMigrate(db)
-	} else if os.Args[len(os.Args)-1] == "--droptable" {
-		DropAllTable(db)
-	}
-	//AutoMigrate(db)
+	//if os.Args[len(os.Args)-1] == "--migrate" {
+	//	AutoMigrate(db)
+	//} else if os.Args[len(os.Args)-1] == "--droptable" {
+	//	DropAllTable(db)
+	//}
+	AutoMigrate(db)
 	return db, nil
 }
 

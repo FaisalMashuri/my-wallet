@@ -59,6 +59,7 @@ func Run() {
 	if err != nil {
 		log.Error("Error connecting database")
 	}
+	redisClient := infrastructure.RedisClient
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
 			return middleware.NewErrorhandler(ctx, err)
@@ -76,7 +77,7 @@ func Run() {
 	mPinRepo := mPinRepository.NewRepository(db)
 
 	//define service
-	userSvc := userService.NewService(userRepo, log, accountRepo)
+	userSvc := userService.NewService(userRepo, log, accountRepo, redisClient)
 	transacetionSvc := transactionService.NewService(transactionRepo, accountRepo, notifRepo, &hub)
 	notifSvc := notifService.NewService(notifRepo)
 	midtransSvc := midtransService.NewService()
