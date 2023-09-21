@@ -11,4 +11,5 @@ type RegisterRequest struct {
 }
 
 type VerifiedUserRequest struct {
+	Otp string `json:"otp"`
 }

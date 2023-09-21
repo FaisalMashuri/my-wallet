@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/account"
 	dtoResAccount "github.com/FaisalMashuri/my-wallet/internal/domain/account/dto/response"
+	"github.com/FaisalMashuri/my-wallet/internal/domain/mq"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/request"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/response"
 	"github.com/redis/go-redis/v9"
+	"time"
 
 	"github.com/FaisalMashuri/my-wallet/shared"
 	"github.com/FaisalMashuri/my-wallet/shared/contract"
@@ -23,14 +25,16 @@ type userService struct {
 	repoAccount account.AccountRepository
 	log         *logrus.Logger
 	redisClient *redis.Client
+	mq          mq.MQService
 }
 
-func NewService(repo user.UserRepository, log *logrus.Logger, repoAccount account.AccountRepository, redis *redis.Client) user.UserService {
+func NewService(repo user.UserRepository, log *logrus.Logger, repoAccount account.AccountRepository, redis *redis.Client, mq mq.MQService) user.UserService {
 	return &userService{
 		repo:        repo,
 		repoAccount: repoAccount,
 		log:         log,
 		redisClient: redis,
+		mq:          mq,
 	}
 }
 
@@ -43,6 +47,9 @@ func (s *userService) Login(userRequest *request.LoginRequest) (*response.LoginR
 		}
 		s.log.Info("User not found")
 		return nil, errors.New(contract.ErrRecordNotFound)
+	}
+	if !userData.VerifiedAt.Valid {
+		return nil, errors.New(contract.ErrUserNotVerified)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(userData.Password), []byte(userRequest.Password))
@@ -70,6 +77,7 @@ func (s *userService) Login(userRequest *request.LoginRequest) (*response.LoginR
 }
 
 func (s *userService) RegisterUser(userRequest *request.RegisterRequest) (userData *user.User, err error) {
+	ctx := context.Background()
 	userData, err = s.repo.FindUserByEmail(userRequest.Email)
 	if userData != nil {
 		if err != nil {
@@ -99,6 +107,24 @@ func (s *userService) RegisterUser(userRequest *request.RegisterRequest) (userDa
 		s.log.Info("failed to create account")
 		return nil, errors.New(contract.ErrInternalServer)
 	}
+	otp := shared.GenerateOTP()
+	err = s.redisClient.Set(ctx, otp, userModel.ID, 60*time.Second).Err()
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("OTP : ", otp)
+	payloadBody := map[string]interface{}{
+		"email": userModel.Email,
+		"otp":   otp,
+	}
+
+	pBody := mq.MessageQueueEmitter{
+		Title:   "Register user",
+		Payload: payloadBody,
+	}
+	payload, err := json.Marshal(pBody)
+
+	err = s.mq.SendData("user.register", payload)
 
 	return userData, nil
 }
@@ -136,7 +162,7 @@ func (s *userService) GetDetailUserById(id string) (res response.UserDetail, err
 				res.Account = append(res.Account, resAccount)
 			}
 			data, _ := json.Marshal(res)
-			_, err = s.redisClient.Set(ctx, id, data, 0).Result()
+			_, err = s.redisClient.Set(ctx, id, data, 15*time.Second).Result()
 			if err != nil {
 				s.log.Error("Error save to cache")
 			}
@@ -151,5 +177,35 @@ func (s *userService) GetDetailUserById(id string) (res response.UserDetail, err
 	fmt.Println("data dari redis : ", res)
 
 	return res, nil
+}
 
+func (s *userService) VerifyUser(verReq request.VerifiedUserRequest) error {
+	ctx := context.Background()
+	val, err := s.redisClient.Get(ctx, verReq.Otp).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return errors.New(contract.ErrInvalidOTP)
+		}
+		return errors.New(contract.ErrUnexpectedError)
+	}
+	err = s.repo.VerifyUser(val)
+	if err != nil {
+		return err
+	}
+	err = s.redisClient.Del(ctx, verReq.Otp).Err()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *userService) ResendOTP(userId string) error {
+	ctx := context.Background()
+	otp := shared.GenerateOTP()
+	err := s.redisClient.Set(ctx, otp, userId, 60*time.Second).Err()
+	if err != nil {
+		return err
+	}
+	fmt.Println("OTP resend : ", otp)
+	return nil
 }

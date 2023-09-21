@@ -51,6 +51,7 @@ require (
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/midtrans/midtrans-go v1.3.7 // indirect
+	github.com/rabbitmq/amqp091-go v1.8.1 // indirect
 	github.com/redis/go-redis/v9 v9.1.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
