@@ -73,6 +73,8 @@ func (r *router) SetupRoute(app *fiber.App) {
 		router.Use(middleware.NewAuthMiddleware(config.AppConfig.SecretKey))
 		router.Get("/token", middleware.GetCredential)
 	})
+	v1.Post("/verify", r.RouteParams.UserController.VerifyUser)
+	v1.Get("/resend-otp", r.RouteParams.UserController.ResendOTP)
 	v1.Post("/users/pin", r.RouteParams.PinController.CreatePin)
 
 	v1.Use(middleware.NewAuthMiddleware(config.AppConfig.SecretKey))

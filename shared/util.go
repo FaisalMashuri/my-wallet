@@ -68,3 +68,15 @@ func GenerateInquiryKey() string {
 
 	return string(randomPart)
 }
+
+func GenerateOTP() string {
+	const charset = "0123456789"
+	const codeLength = 6
+
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+	randomPart := make([]byte, codeLength)
+	for i := 0; i < len(randomPart); i++ {
+		randomPart[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(randomPart)
+}
