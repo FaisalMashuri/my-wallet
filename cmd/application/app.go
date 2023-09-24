@@ -61,7 +61,8 @@ func Run() {
 		log.Error("Error connecting database")
 	}
 	redisClient := infrastructure.RedisClient
-	mq := infrastructure.MessageBroker
+	mq := infrastructure.NewRabbitMQ(config.AppConfig)
+
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
 			return middleware.NewErrorhandler(ctx, err)

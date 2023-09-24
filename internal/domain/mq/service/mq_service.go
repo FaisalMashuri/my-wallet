@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/FaisalMashuri/my-wallet/infrastructure"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/mq"
-	"github.com/rabbitmq/amqp091-go"
-	"time"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type mqService struct {
@@ -19,13 +19,13 @@ func NewMqService(mq *infrastructure.RabbitMQ) mq.MQService {
 }
 
 func (s *mqService) SendData(key string, payload []byte) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	err := s.mq.Channel.PublishWithContext(ctx, "user", key, false, false, amqp091.Publishing{
+	ctx := context.Background()
+	err := s.mq.Channel.PublishWithContext(ctx, "user", key, false, false, amqp.Publishing{
 		ContentType: "text/plain",
 		Body:        payload,
 	})
 	if err != nil {
+		fmt.Println("ERROR publish topic : ", err)
 		return err
 	}
 	return nil
