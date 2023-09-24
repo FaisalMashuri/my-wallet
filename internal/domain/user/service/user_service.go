@@ -112,7 +112,6 @@ func (s *userService) RegisterUser(userRequest *request.RegisterRequest) (userDa
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("OTP : ", otp)
 	payloadBody := map[string]interface{}{
 		"email": userModel.Email,
 		"otp":   otp,
@@ -125,6 +124,9 @@ func (s *userService) RegisterUser(userRequest *request.RegisterRequest) (userDa
 	payload, err := json.Marshal(pBody)
 
 	err = s.mq.SendData("user.register", payload)
+	if err == nil {
+		fmt.Println("Topic successfully sent to MQ")
+	}
 
 	return userData, nil
 }

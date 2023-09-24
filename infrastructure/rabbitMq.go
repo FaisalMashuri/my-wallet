@@ -7,16 +7,15 @@ import (
 	"log"
 )
 
-var MessageBroker = NewRabbitMQ()
-
 type RabbitMQ struct {
 	Conn    *amqp.Connection
 	Channel *amqp.Channel
 	Queue   *amqp.Queue
 }
 
-func NewRabbitMQ() *RabbitMQ {
-	conString := fmt.Sprintf("amqps://%s:%s@%s/%s", config.AppConfig.RabbitMQConfig.User, config.AppConfig.RabbitMQConfig.Password, config.AppConfig.RabbitMQConfig.Host, config.AppConfig.RabbitMQConfig.User)
+func NewRabbitMQ(cfg config.Config) *RabbitMQ {
+	conString := cfg.DSN_MQ
+
 	conn, err := amqp.Dial(conString)
 	if err != nil {
 		return nil
@@ -30,6 +29,7 @@ func NewRabbitMQ() *RabbitMQ {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("RabbitMQ connection established")
 	return &RabbitMQ{
 		Conn:    conn,
 		Queue:   nil,
