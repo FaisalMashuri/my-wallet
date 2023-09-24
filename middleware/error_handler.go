@@ -49,7 +49,7 @@ func ErrorHandler(err error) (int, interface{}) {
 	case http.StatusNotFound:
 		return errcntrct.ErrorMessage(http.StatusNotFound, "", errors.New(contract.ErrUrlNotFound))
 	case contract.ErrRecordNotFound:
-		return errcntrct.ErrorMessage(http.StatusInternalServerError, "", errors.New(contract.ErrRecordNotFound))
+		return errcntrct.ErrorMessage(http.StatusNotFound, "", errors.New(contract.ErrRecordNotFound))
 	case contract.ErrEmailAlreadyRegister:
 		return errcntrct.ErrorMessage(http.StatusInternalServerError, "", errors.New(contract.ErrEmailAlreadyRegister))
 	case contract.ErrInvalidRequestFamily:
@@ -62,14 +62,20 @@ func ErrorHandler(err error) (int, interface{}) {
 		return errcntrct.ErrorMessage(http.StatusGatewayTimeout, "", errors.New(contract.ErrContextDeadlineExceeded))
 	case contract.ErrUnauthorized:
 		return errcntrct.ErrorMessage(http.StatusUnauthorized, "", errors.New(contract.ErrUnauthorized))
-	case contract.ErrTransactionUnauthoried:
-		return errcntrct.ErrorMessage(http.StatusUnauthorized, "", errors.New(contract.ErrTransactionUnauthoried))
+	case contract.ErrTransactionUnauthorized:
+		return errcntrct.ErrorMessage(http.StatusUnauthorized, "", errors.New(contract.ErrTransactionUnauthorized))
 	case contract.ErrBadRequest:
 		return errcntrct.ErrorMessage(http.StatusBadRequest, "", errors.New(contract.ErrBadRequest))
+	case contract.ErrUserNotVerified:
+		return errcntrct.ErrorMessage(http.StatusUnauthorized, "", errors.New(contract.ErrUserNotVerified))
 	case contract.ErrInvalidPin:
 		return errcntrct.ErrorMessage(http.StatusBadRequest, "", errors.New(contract.ErrInvalidPin))
 	case contract.ErrLimitAccountOpen:
 		return errcntrct.ErrorMessage(http.StatusInternalServerError, "", errors.New(contract.ErrLimitAccountOpen))
+	case contract.ErrInvalidOTP:
+		return errcntrct.ErrorMessage(http.StatusInternalServerError, "", errors.New(contract.ErrInvalidOTP))
+	case contract.ErrInsufficientBalance:
+		return errcntrct.ErrorMessage(http.StatusPaymentRequired, "", errors.New(contract.ErrInsufficientBalance))
 	case contract.ErrMandatory:
 		return responseAdapter(http.StatusBadRequest, contract.ErrMandatory, extraError.(string))
 	case contract.ErrFormatField:

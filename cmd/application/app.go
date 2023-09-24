@@ -28,6 +28,7 @@ import (
 	userController "github.com/FaisalMashuri/my-wallet/internal/domain/user/controller"
 
 	accountService "github.com/FaisalMashuri/my-wallet/internal/domain/account/service"
+	mqService "github.com/FaisalMashuri/my-wallet/internal/domain/mq/service"
 	userRepository "github.com/FaisalMashuri/my-wallet/internal/domain/user/repository"
 	userService "github.com/FaisalMashuri/my-wallet/internal/domain/user/service"
 
@@ -60,6 +61,8 @@ func Run() {
 		log.Error("Error connecting database")
 	}
 	redisClient := infrastructure.RedisClient
+	mq := infrastructure.NewRabbitMQ(config.AppConfig)
+
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
 			return middleware.NewErrorhandler(ctx, err)
@@ -77,8 +80,9 @@ func Run() {
 	mPinRepo := mPinRepository.NewRepository(db)
 
 	//define service
-	userSvc := userService.NewService(userRepo, log, accountRepo, redisClient)
-	transacetionSvc := transactionService.NewService(transactionRepo, accountRepo, notifRepo, &hub)
+	messageQueueService := mqService.NewMqService(mq)
+	userSvc := userService.NewService(userRepo, log, accountRepo, redisClient, messageQueueService)
+	transacetionSvc := transactionService.NewService(transactionRepo, accountRepo, notifRepo, &hub, redisClient)
 	notifSvc := notifService.NewService(notifRepo)
 	midtransSvc := midtransService.NewService()
 	topUpSvc := topupService.NewService(topupRepo, midtransSvc, notifRepo, accountRepo, &hub)

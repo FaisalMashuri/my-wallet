@@ -18,6 +18,7 @@ type Config struct {
 	RabbitMQConfig RabbitMQ
 	AppEnv         string `env:"APP_ENV"`
 	SecretKey      string `env:"SECRET_KEY"`
+	DSN_MQ         string `env:"DSN_MQ"`
 	ErrorContract  ErrorContract
 	Midtrans       MidtransConfig
 }
@@ -77,14 +78,14 @@ func LoadConfig() error {
 		return err
 	}
 
-	err = env.Parse(&AppConfig.RabbitMQConfig)
+	err = env.Parse(&AppConfig.Midtrans)
 	if err != nil {
 		log.Default()
 		return err
 	}
-	err = env.Parse(&AppConfig.Midtrans)
+
+	err = env.Parse(&AppConfig.RabbitMQConfig)
 	if err != nil {
-		log.Default()
 		return err
 	}
 	return err

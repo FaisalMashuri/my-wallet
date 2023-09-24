@@ -6,6 +6,7 @@ import (
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/request"
 	"github.com/FaisalMashuri/my-wallet/middleware"
 	"github.com/FaisalMashuri/my-wallet/shared"
+	"github.com/FaisalMashuri/my-wallet/shared/constant"
 	"github.com/FaisalMashuri/my-wallet/shared/contract"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -79,4 +80,33 @@ func (c *userController) GetDetailUserJWT(ctx *fiber.Ctx) error {
 	}
 	resp := shared.SuccessResponse("Success", "Success get detail user", res)
 	return ctx.Status(200).JSON(resp)
+}
+
+func (c *userController) VerifyUser(ctx *fiber.Ctx) error {
+	fmt.Println("VERIFYING USER")
+	var verReq request.VerifiedUserRequest
+	err := ctx.BodyParser(&verReq)
+	if err != nil {
+		return fiber.NewError(http.StatusBadRequest, contract.ErrBadRequest)
+	}
+	err = c.service.VerifyUser(verReq)
+	if err != nil {
+		return fiber.NewError(http.StatusBadRequest, err.Error())
+	}
+	resp := shared.SuccessResponse("Success", "User has been verified", nil)
+	return ctx.Status(http.StatusOK).JSON(resp)
+}
+
+func (c *userController) ResendOTP(ctx *fiber.Ctx) error {
+	fmt.Println("ResendOTP")
+	userId := ctx.Query("user")
+	if userId == constant.EmptyString {
+		return fiber.NewError(http.StatusBadRequest, contract.ErrBadRequest)
+	}
+	err := c.service.ResendOTP(userId)
+	if err != nil {
+		return fiber.NewError(http.StatusBadRequest, contract.ErrBadRequest)
+	}
+	resp := shared.SuccessResponse("Success", "OTP has been resent", nil)
+	return ctx.Status(http.StatusOK).JSON(resp)
 }

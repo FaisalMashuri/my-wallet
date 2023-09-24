@@ -4,6 +4,7 @@ import (
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"time"
 )
 
 type userRepository struct {
@@ -65,5 +66,13 @@ func (r *userRepository) GetAllUser() (user []*user.User, err error) {
 }
 
 func (r *userRepository) DeleteUser(id string) error {
+	return nil
+}
+
+func (r *userRepository) VerifyUser(id string) error {
+	err := r.db.Debug().Model(&user.User{}).Where("id = ?", id).Update("verified_at", time.Now()).Error
+	if err != nil {
+		return err
+	}
 	return nil
 }

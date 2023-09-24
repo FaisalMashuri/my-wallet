@@ -11,6 +11,7 @@ import (
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction/dto/request"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/transaction/dto/response"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/FaisalMashuri/my-wallet/shared"
 	"github.com/FaisalMashuri/my-wallet/shared/contract"
@@ -25,6 +26,7 @@ type transactionService struct {
 	repoAccount     account.AccountRepository
 	repoNotif       notification.NotificationRepository
 	hub             *dto.Hub
+	redisClient     *redis.Client
 }
 
 func (t *transactionService) NotificationAfterTransfer(sofAccount account.Account, dofAccount account.Account, amount float64) {
@@ -75,6 +77,7 @@ func (t *transactionService) NotificationAfterTransfer(sofAccount account.Accoun
 
 func (t transactionService) TranferInquiry(InquiryReq request.TransferInquiryReq, ctx *fiber.Ctx) (*response.TransferInquiryRes, error) {
 	//TODO implement me
+
 	credentialuser := ctx.Locals("credentials").(user.User)
 	myAccount, err := t.repoAccount.FindAccountByAccountNumber(InquiryReq.SofAccountNumber)
 	if myAccount == nil {
@@ -84,7 +87,7 @@ func (t transactionService) TranferInquiry(InquiryReq request.TransferInquiryReq
 		return nil, errors.New(contract.ErrRecordNotFound)
 	}
 	if myAccount.UserID != credentialuser.ID {
-		return nil, errors.New(contract.ErrTransactionUnauthoried)
+		return nil, errors.New(contract.ErrTransactionUnauthorized)
 	}
 
 	dofAccount, err := t.repoAccount.FindAccountByAccountNumber(InquiryReq.DofAccountNumber)
@@ -96,7 +99,7 @@ func (t transactionService) TranferInquiry(InquiryReq request.TransferInquiryReq
 	}
 
 	if myAccount.Balance < InquiryReq.Amount {
-		return nil, errors.New(contract.ErrInsuficentBalance)
+		return nil, errors.New(contract.ErrInsufficientBalance)
 	}
 	inquiryKey := shared.GenerateInquiryKey()
 	InquiryKeyRes := request.TransferInquiryReq{
@@ -111,14 +114,18 @@ func (t transactionService) TranferInquiry(InquiryReq request.TransferInquiryReq
 		InquiryKey: inquiryKey,
 		Value:      string(inquiryJSONString),
 	}
-
-	data, err := t.repoTransaction.CreateTransactionInquiry(inquirymodel)
-	if err != nil {
-		return nil, err
-	}
+	//
+	//data, err := t.repoTransaction.CreateTransactionInquiry(inquirymodel)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	inquiryRespnse := response.TransferInquiryRes{
-		data.InquiryKey,
+		inquirymodel.InquiryKey,
+	}
+	err = t.redisClient.Set(ctx.Context(), inquirymodel.InquiryKey, inquirymodel.Value, 30*time.Minute).Err()
+	if err != nil {
+		log.Println(err)
 	}
 
 	return &inquiryRespnse, nil
@@ -126,23 +133,27 @@ func (t transactionService) TranferInquiry(InquiryReq request.TransferInquiryReq
 
 func (t transactionService) TransferInquiryExec(InquiryExecReq request.TransferInquiryExec, ctx *fiber.Ctx) error {
 	//TODO implement me
+	var inqReq request.TransferInquiryReq
 
-	dataInquiry, err := t.repoTransaction.FindTransactionInquiry(InquiryExecReq.InquiryKey)
-	if dataInquiry == nil {
-		if err != nil {
-			log.Println("Error  Find Inquiry: ", err.Error())
-			return errors.New(contract.ErrInternalServer)
+	//Get data from redis
+	val, err := t.redisClient.Get(ctx.Context(), InquiryExecReq.InquiryKey).Result()
+	if err != nil {
+		if err != redis.Nil {
+			log.Println(err.Error())
 		}
 		return errors.New(contract.ErrRecordNotFound)
-	}
 
-	var inqReq request.TransferInquiryReq
-	err = json.Unmarshal([]byte(dataInquiry.Value), &inqReq)
-	if err != nil {
-		log.Println("Error Unmarshar Inquiry Val : ", err.Error())
-		return err
 	}
-	fmt.Println("inreq: ", inqReq)
+	fmt.Println("data val redis  : ", val)
+	err = json.Unmarshal([]byte(val), &inqReq)
+	if err != nil {
+		log.Println("Error : ", err.Error())
+	}
+	fmt.Println("data dari redis : ", inqReq)
+
+	defer func() {
+		_ = t.redisClient.Del(ctx.Context(), InquiryExecReq.InquiryKey).Err()
+	}()
 
 	myAccount, err := t.repoAccount.FindAccountByAccountNumber(inqReq.SofAccountNumber)
 	if myAccount == nil {
@@ -207,7 +218,7 @@ func (t transactionService) TransferInquiryExec(InquiryExecReq request.TransferI
 	if err != nil {
 		return err
 	}
-	err = t.repoTransaction.DeleteInquiry(dataInquiry.InquiryKey)
+	err = t.repoTransaction.DeleteInquiry(InquiryExecReq.InquiryKey)
 	if err != nil {
 		log.Println("Error delete : ", err.Error())
 
@@ -217,11 +228,12 @@ func (t transactionService) TransferInquiryExec(InquiryExecReq request.TransferI
 	return nil
 }
 
-func NewService(repoTransaction transaction.TransactionRepository, repoAccount account.AccountRepository, repoNotif notification.NotificationRepository, hub *dto.Hub) transaction.TransactionService {
+func NewService(repoTransaction transaction.TransactionRepository, repoAccount account.AccountRepository, repoNotif notification.NotificationRepository, hub *dto.Hub, redisClient *redis.Client) transaction.TransactionService {
 	return &transactionService{
 		repoTransaction: repoTransaction,
 		repoAccount:     repoAccount,
 		repoNotif:       repoNotif,
 		hub:             hub,
+		redisClient:     redisClient,
 	}
 }
