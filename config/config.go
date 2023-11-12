@@ -21,6 +21,7 @@ type Config struct {
 	DSN_MQ         string `env:"DSN_MQ"`
 	ErrorContract  ErrorContract
 	Midtrans       MidtransConfig
+	Twillio        Twillio
 }
 
 type ErrorContract struct {
@@ -48,6 +49,11 @@ type MidtransConfig struct {
 	ClientKey  string `env:"MIDTRANS_CLIENT_KEY"`
 	MerchantID string `env:"MIDTRANS_MERCHANT_ID"`
 	Env        string `env:"MIDTRANS_ENV"`
+}
+
+type Twillio struct {
+	SID   string `env:"TWILIO_ACCOUNT_SID"`
+	Token string `env:"TWILIO_AUTH_TOKEN"`
 }
 
 func LoadConfig() error {
@@ -88,5 +94,10 @@ func LoadConfig() error {
 	if err != nil {
 		return err
 	}
-	return err
+
+	err = env.Parse(&AppConfig.Twillio)
+	if err != nil {
+		return err
+	}
+	return nil
 }

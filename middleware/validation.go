@@ -20,9 +20,9 @@ func ValidateRequest(data interface{}) (string, error) {
 		for _, err := range errs.(validator.ValidationErrors) {
 			switch err.Tag() {
 			case "email":
-				return err.Field(), errors.New(contract.ErrFormatField)
+				return err.Field(), errors.New(contract.ErrInvalidFieldFormat)
 			case "required":
-				return err.Field(), errors.New(contract.ErrMandatory)
+				return err.Field(), errors.New(contract.ErrMandatoryField)
 			case "min":
 				return err.Field(), errors.New(contract.ErrMinFormat)
 			}

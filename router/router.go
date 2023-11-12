@@ -70,6 +70,7 @@ func (r *router) SetupRoute(app *fiber.App) {
 	v1.Route("/auth", func(router fiber.Router) {
 		router.Post("/register", r.RouteParams.UserController.Register)
 		router.Post("/login", r.RouteParams.UserController.Login)
+		router.Post("/check-phone-number", r.RouteParams.UserController.CheckPhoneNumberExist)
 		router.Use(middleware.NewAuthMiddleware(config.AppConfig.SecretKey))
 		router.Get("/token", middleware.GetCredential)
 	})

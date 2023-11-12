@@ -1,11 +1,21 @@
 package contract
 
 const (
+	SuccessCode      = "0000"
+	SuccessNoContent = "0200"
+
+	ErrDuplicateValue = "0001"
+	ErrRecordNotFound = "0002"
+	ErrGenerateToken  = "0003"
+
+	ErrMandatoryField          = "0100"
+	ErrInvalidFieldFormat      = "0101"
+	ErrCantParseBodyJSON       = "0102"
+	ErrInvalidSecurityCode     = "0103"
 	ErrInvalidRequestFamily    = "1000"
 	ErrPasswordNotMatch        = "1001"
 	ErrContextDeadlineExceeded = "1002"
 
-	ErrRecordNotFound       = "0299"
 	ErrEmailAlreadyRegister = "0300"
 	ErrInsufficientBalance  = "0301"
 	ErrLimitAccountOpen     = "0302"
@@ -25,7 +35,7 @@ const (
 
 	ErrInternalServer = "5000"
 
-	ErrUnexpectedError = "9999"
+	ErrUnExpected = "9999"
 
 	Err
 	DescErrContextDeadlineExceeded = "context deadline exceeded"

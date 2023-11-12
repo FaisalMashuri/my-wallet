@@ -1,14 +1,14 @@
 package shared
 
-type BaseReponse struct {
+type BaseResponse struct {
 	Code    string      `json:"responseCode"`
 	Status  string      `json:"responseStatus"`
 	Message string      `json:"responseMessage,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
 }
 
-func SuccessResponse(status string, message string, data interface{}) *BaseReponse {
-	return &BaseReponse{
+func SuccessResponse(status string, message string, data interface{}) *BaseResponse {
+	return &BaseResponse{
 		Code:    "0000",
 		Status:  status,
 		Message: message,
@@ -16,8 +16,8 @@ func SuccessResponse(status string, message string, data interface{}) *BaseRepon
 	}
 }
 
-func ErrorResponse(code string, status string, message string) *BaseReponse {
-	return &BaseReponse{
+func ErrorResponse(code string, status string, message string) *BaseResponse {
+	return &BaseResponse{
 		Code:    code,
 		Status:  status,
 		Message: message,

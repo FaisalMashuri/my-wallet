@@ -2,8 +2,11 @@ package repository
 
 import (
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
+	"github.com/FaisalMashuri/my-wallet/shared/contract"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"strings"
 	"time"
 )
 
@@ -17,6 +20,10 @@ func NewRepository(db *gorm.DB, log *logrus.Logger) user.UserRepository {
 		db:  db,
 		log: log,
 	}
+}
+
+func (r *userRepository) GetDB() *gorm.DB {
+	return r.db
 }
 
 func (r *userRepository) FindUserByEmail(email string) (user *user.User, err error) {
@@ -39,6 +46,9 @@ func (r *userRepository) CreateUser(user *user.User) (*user.User, error) {
 	r.log.Debug("Start creating user")
 	err := r.db.Debug().Create(&user).Error
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return nil, errors.New(contract.ErrDuplicateValue)
+		}
 		r.log.WithField("error", err.Error()).Info("failed create user")
 		return nil, err
 	}
@@ -75,4 +85,20 @@ func (r *userRepository) VerifyUser(id string) error {
 		return err
 	}
 	return nil
+}
+
+func (r *userRepository) FindPhoneNumber(phoneNumber string) error {
+	err := r.db.Debug().Take(&user.User{}, "phone = ?", phoneNumber).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *userRepository) GetUserByPhoneNumber(phoneNumber string) (userModel *user.User, err error) {
+	err = r.db.Debug().Take(&userModel, "phone = ?", phoneNumber).Error
+	if err != nil {
+		return nil, err
+	}
+	return userModel, nil
 }

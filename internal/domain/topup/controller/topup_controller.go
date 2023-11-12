@@ -1,11 +1,9 @@
 package controller
 
 import (
-	"fmt"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/topup"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/topup/dto/request"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
-	"github.com/FaisalMashuri/my-wallet/middleware"
 	"github.com/FaisalMashuri/my-wallet/shared"
 	"github.com/gofiber/fiber/v2"
 	"net/http"
@@ -23,10 +21,10 @@ func (t topUpController) InitializeTopUp(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(&req); err != nil {
 		return err
 	}
-	fieldErr, err := middleware.ValidateRequest(req)
-	if err != nil {
-		return fiber.NewError(http.StatusBadRequest, fmt.Sprintf("%s,%s", err.Error(), fieldErr))
-	}
+	//fieldErr, err := middleware.ValidateRequest(req)
+	//if err != nil {
+	//	return fiber.NewError(http.StatusBadRequest, fmt.Sprintf("%s,%s", err.Error(), fieldErr))
+	//}
 	req.UserID = credentialuser.ID
 	res, err := t.topUpService.InitializeTopUp(req)
 	if err != nil {

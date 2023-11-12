@@ -1,22 +1,18 @@
 {
-  "1000": {"var": "ErrInvalidRequestFamily", "msg": "Invalid request"},
-  "4000": {"var": "ErrUnauthorized", "msg": "The request is malformed or contains invalid data."},
-  "0302": {"var": "ErrLimitAccountOpen", "msg": "You have reach limit to open new account, only 2 accounts each user"},
-  "0303": {"var": "ErrInvalidPin", "msg": "Invalid pin number"},
-  "0304": {"var": "ErrUserNotVerified", "msg": "Please check email to verified your email"},
-  "4010": {"var": "ErrUnauthorized", "msg": "Unauthorized"},
-  "4011": {"var": "ErrTransactionUnauthorized", "msg": "Transaction Unauthorized, insert your valid account number"},
-  "4050": {"var": "ErrMethodNotAllowed", "msg": "Method Not Allowed"},
-  "4040": {"var": "ErrUrlNotFound", "msg": "Url Not Found"},
-  "4001": {"var": "ErrMandatory", "msg": "field %s mandatory"},
-  "4002": {"var": "ErrMandatory", "msg": "invalid format field %s"},
-  "4003": {"var": "ErrMandatory", "msg": "field %s less than the minimum requirement ,8 characters are required "},
-  "1001": {"var": "ErrPasswordNotMatch", "msg": "Password not match"},
-  "4004": {"var": "ErrPasswordNotMatch", "msg": "Invalid transfer key"},
-  "4005": {"var": "ErrInvalidOTP", "msg": "OTP invalid or has been expired"},
-  "0299" : {"var" :  "ErrRecordNotFound", "msg": "Record Not Found"},
-  "0300" : {"var" :  "ErrEmailAlreadyRegister", "msg": "Email Already Register"},
-  "0301" : {"var" :  "ErrInsufficientBalance", "msg": "No Enough Balance"},
-  "5000": {"var": "ErrInternalServer", "msg": "Internal Server Error"},
-  "1002": {"var": "ErrContextDeadlineExceeded", "msg": "Context mencapai batas waktu, operasi terlalu lama"}
+  "0000": {"responseVar": "SuccessResponse", "responseMessage": "Success", "httpStatusCode":"200"},
+  "0200": {"responseVar": "SuccessNoContent", "responseMessage": "Data available", "httpStatusCode":"204"},
+
+
+  "0001" : {"responseVar": "ErrDuplicateValue", "responseMessage": "Duplicate unique value", "httpStatusCode":"409"},
+  "0002" : {"responseVar": "ErrRecordNotFound", "responseMessage": "Record not found", "httpStatusCode":"404"},
+  "0003": {"responseVar":"ErrGenerateToken", "responseMessage" :  "Failed to generate jwt token", "httpStatusCode":"500"},
+
+
+  "0100": {"responseVar": "ErrMandatoryField", "responseMessage": "Field '%v' is mandatory", "httpStatusCode":"400"},
+  "0101": {"responseVar": "ErrInvalidFieldFormat", "responseMessage": "Field '%v' is invalid format", "httpStatusCode":"400"},
+  "0102": {"responseVar": "ErrCantParseBodyJSON", "responseMessage": "Failed to parse JSON", "httpStatusCode":"400"},
+  "0103": {"responseVar": "ErrInvalidSecurityCode", "responseMessage": "Invalid security code", "httpStatusCode":"400"},
+
+  "9999": {"responseVar": "ErrUnExpected", "responseMessage": "Unexpected error", "httpStatusCode":"500"}
+
 }

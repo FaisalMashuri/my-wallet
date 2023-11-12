@@ -6,19 +6,33 @@ import (
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/response"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 type User struct {
 	gorm.Model
 	ID         string `gorm:"primary_key"`
-	Email      string
+	Email      string `gorm:"unique"`
+	Name       string
 	Password   string
+	Phone      string       `gorm:"uniqueIndex"`
 	VerifiedAt sql.NullTime `gorm:"default:null"`
 }
 
+// For mapping jwt token
+type AuthData struct {
+	ID           string
+	Email        string
+	Phone        string
+	Name         string
+	SecurityCode string
+	TotalBalance float64
+	UserType     string
+	IsVerified   bool
+}
+
 type UserRepository interface {
+	GetDB() *gorm.DB
 	FindUserByEmail(email string) (*User, error)
 	CreateUser(user *User) (*User, error)
 	UpdateUser(updatedUser *User) (*User, error)
@@ -26,14 +40,17 @@ type UserRepository interface {
 	GetAllUser() ([]*User, error)
 	DeleteUser(id string) error
 	VerifyUser(id string) error
+	FindPhoneNumber(phoneNumber string) error
+	GetUserByPhoneNumber(phoneNumber string) (*User, error)
 }
 
 type UserService interface {
-	Login(userRequest *request.LoginRequest) (res *response.LoginResponse, err error)
-	RegisterUser(userRequest *request.RegisterRequest) (user *User, err error)
+	Login(userRequest *request.LoginRequest) (res *response.AuthResponse, err error)
+	RegisterUser(userRequest *request.RegisterRequest) (res *response.AuthResponse, err error)
 	GetDetailUserById(id string) (user response.UserDetail, err error)
 	VerifyUser(verReq request.VerifiedUserRequest) error
 	ResendOTP(userId string) error
+	IsPhoneNumberExist(phoneNumber string) (bool, error)
 }
 
 type UserController interface {
@@ -42,22 +59,15 @@ type UserController interface {
 	GetDetailUserJWT(ctx *fiber.Ctx) error
 	VerifyUser(ctx *fiber.Ctx) error
 	ResendOTP(ctx *fiber.Ctx) error
+	CheckPhoneNumberExist(ctx *fiber.Ctx) error
 }
 
 func (u *User) FromRegistRequest(req *request.RegisterRequest) User {
-	hashedPass, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.MinCost)
+	//hashedPass, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.MinCost)
 	return User{
-		Email:    req.Email,
-		Password: string(hashedPass),
-	}
-}
-
-func (u *User) ToRegisterResponse() response.RegisterResponse {
-	return response.RegisterResponse{
-		ID:        u.ID,
-		Email:     u.Email,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
+		Email: req.Email,
+		//Password: string(hashedPass),
+		Phone: req.Phone,
 	}
 }
 

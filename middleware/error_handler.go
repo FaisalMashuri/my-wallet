@@ -1,94 +1,120 @@
 package middleware
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/FaisalMashuri/my-wallet/shared"
-	"github.com/FaisalMashuri/my-wallet/shared/contract"
-	"github.com/Saucon/errcntrct"
-	"github.com/gofiber/fiber/v2"
-	"github.com/pkg/errors"
-	"net/http"
 	"strings"
+
+	"github.com/gofiber/fiber/v2"
+	"os"
+	"strconv"
 )
 
-func NewErrorhandler(ctx *fiber.Ctx, err error) error {
-	fmt.Println("ERROR HANDLING : ", err)
+type ReturnResponseError struct {
+	RespCode string `json:"responseCode"`
+	RespMsg  string `json:"responseMessage"`
+}
+
+type ResponseList struct {
+	ReturnResponseError
+	HttpStatusCode string `json:"httpStatusCode"`
+}
+
+type ResponseFromDTO struct {
+	shared.BaseResponse
+	httpStatusCode ResponseList
+}
+
+type ListResponseFromJsonFile struct {
+	ListResponseFromJsonFile map[string]ResponseList
+}
+
+var errorDataList map[string]ResponseList
+
+func LoadErrorListFromJsonFile(pathfilename string) error {
+	var file []byte
+	var err error
+
+	file, err = os.ReadFile(pathfilename)
 	if err != nil {
-		dataResp, message := ErrorHandler(err)
-		var errData = message.(errcntrct.ErrorData)
-		resp := shared.ErrorResponse(errData.Code, "failed", fmt.Sprintf("%v", errData.Msg))
-		return ctx.Status(dataResp).JSON(resp)
-
+		return err
 	}
-	return nil
+	err = json.Unmarshal(file, &errorDataList)
+	if err != nil {
+		return err
+	} else {
+		return nil
+	}
 }
 
-func ErrorHandler(err error) (int, interface{}) {
-	var e *fiber.Error
+// Default error handler
+var ErrorHandler = func(c *fiber.Ctx, err error) error {
+	fmt.Println("ERORR DI HADNLING : ", err)
+	errData := strings.Split(err.Error(), ",")
+	var errCode, errMsg string
+	if len(errData) > 1 {
+		errCode = errData[0]
+		errMsg = errData[1]
+		resp := ResponseError(c, errCode)
+		convertHTTPStatusCode, _ := strconv.Atoi(resp.HttpStatusCode)
+		return c.Status(convertHTTPStatusCode).JSON(ReturnResponseError{
+			RespCode: resp.RespCode,
+			RespMsg:  fmt.Sprintf(resp.RespMsg, strings.ToLower(errMsg)),
+		})
+	}
+	resp := ResponseError(c, err.Error())
 
-	var code, extraError interface{}
-	if errors.As(err, &e) {
-		fmt.Println("ERROR : ", e)
-		fmt.Print("MEssage  : ", e.Message)
-		message := strings.Split(e.Message, ",")
-		fmt.Println("Message split: ", message)
-		fmt.Println("panjang message : ", len(message))
-		if len(message) > 1 {
-			code = message[0]
-			extraError = message[1]
-		} else {
-			code = e.Message
+	convertHTTPStatusCode, _ := strconv.Atoi(resp.HttpStatusCode)
+
+	return c.Status(convertHTTPStatusCode).JSON(ReturnResponseError{
+		RespCode: resp.RespCode,
+		RespMsg:  resp.RespMsg,
+	})
+}
+
+func ResponseError(ctx *fiber.Ctx, respCode string) ResponseList {
+
+	var loadResponse = SearchResponseValueFromJsonFile(respCode)
+
+	return ResponseList{
+		ReturnResponseError: ReturnResponseError{
+			RespCode: respCode,
+			RespMsg:  loadResponse.RespMsg,
+		},
+		HttpStatusCode: loadResponse.HttpStatusCode,
+	}
+}
+
+func ResponseSuccess(ctx *fiber.Ctx, respCode string, data interface{}) error {
+
+	var loadResponse = SearchResponseValueFromJsonFile(respCode)
+
+	convertHTTPStatusCode, _ := strconv.Atoi(loadResponse.HttpStatusCode)
+
+	return ctx.Status(convertHTTPStatusCode).JSON(ResponseFromDTO{
+		BaseResponse: shared.BaseResponse{
+			Status:  "Success",
+			Code:    respCode,
+			Message: loadResponse.RespMsg,
+			Data:    data,
+		},
+	})
+}
+
+func SearchResponseValueFromJsonFile(resCode string) ResponseList {
+	var loadListResponse = errorDataList
+	resCodeValue, errResCodeValue := loadListResponse[resCode]
+	if errResCodeValue {
+		return resCodeValue
+	} else {
+		return ResponseList{
+			ReturnResponseError: ReturnResponseError{
+				RespCode: resCode,
+				RespMsg:  "Error message is not defined!",
+			},
+			HttpStatusCode: strconv.Itoa(fiber.StatusInternalServerError),
 		}
-
 	}
-	//fmt.Println("CODE : ", code)
 
-	switch code {
-	case http.StatusMethodNotAllowed:
-		return errcntrct.ErrorMessage(http.StatusMethodNotAllowed, "", errors.New(contract.ErrMethodNotAllowed))
-	case http.StatusNotFound:
-		return errcntrct.ErrorMessage(http.StatusNotFound, "", errors.New(contract.ErrUrlNotFound))
-	case contract.ErrRecordNotFound:
-		return errcntrct.ErrorMessage(http.StatusNotFound, "", errors.New(contract.ErrRecordNotFound))
-	case contract.ErrEmailAlreadyRegister:
-		return errcntrct.ErrorMessage(http.StatusInternalServerError, "", errors.New(contract.ErrEmailAlreadyRegister))
-	case contract.ErrInvalidRequestFamily:
-		return errcntrct.ErrorMessage(http.StatusBadRequest, "", errors.New(contract.ErrInvalidRequestFamily))
-	case contract.ErrPasswordNotMatch:
-		return errcntrct.ErrorMessage(http.StatusUnauthorized, "", errors.New(contract.ErrPasswordNotMatch))
-	case contract.ErrInternalServer:
-		return errcntrct.ErrorMessage(http.StatusInternalServerError, "", errors.New(contract.ErrInternalServer))
-	case contract.ErrContextDeadlineExceeded:
-		return errcntrct.ErrorMessage(http.StatusGatewayTimeout, "", errors.New(contract.ErrContextDeadlineExceeded))
-	case contract.ErrUnauthorized:
-		return errcntrct.ErrorMessage(http.StatusUnauthorized, "", errors.New(contract.ErrUnauthorized))
-	case contract.ErrTransactionUnauthorized:
-		return errcntrct.ErrorMessage(http.StatusUnauthorized, "", errors.New(contract.ErrTransactionUnauthorized))
-	case contract.ErrBadRequest:
-		return errcntrct.ErrorMessage(http.StatusBadRequest, "", errors.New(contract.ErrBadRequest))
-	case contract.ErrUserNotVerified:
-		return errcntrct.ErrorMessage(http.StatusUnauthorized, "", errors.New(contract.ErrUserNotVerified))
-	case contract.ErrInvalidPin:
-		return errcntrct.ErrorMessage(http.StatusBadRequest, "", errors.New(contract.ErrInvalidPin))
-	case contract.ErrLimitAccountOpen:
-		return errcntrct.ErrorMessage(http.StatusInternalServerError, "", errors.New(contract.ErrLimitAccountOpen))
-	case contract.ErrInvalidOTP:
-		return errcntrct.ErrorMessage(http.StatusInternalServerError, "", errors.New(contract.ErrInvalidOTP))
-	case contract.ErrInsufficientBalance:
-		return errcntrct.ErrorMessage(http.StatusPaymentRequired, "", errors.New(contract.ErrInsufficientBalance))
-	case contract.ErrMandatory:
-		return responseAdapter(http.StatusBadRequest, contract.ErrMandatory, extraError.(string))
-	case contract.ErrFormatField:
-		return responseAdapter(http.StatusBadRequest, contract.ErrFormatField, extraError.(string))
-	case contract.ErrMinFormat:
-		return responseAdapter(http.StatusBadRequest, contract.ErrMinFormat, extraError.(string))
-	default:
-		return errcntrct.ErrorMessage(9999, "", errors.New(contract.ErrUnexpectedError))
-	}
-}
-
-func responseAdapter(code int, errCode string, extraError string) (int, errcntrct.ErrorData) {
-	_, errData := errcntrct.ErrorMessage(code, "", errors.New(errCode))
-	errData.Msg = fmt.Sprintf(errData.Msg, strings.ToLower(extraError))
-	return code, errData
 }

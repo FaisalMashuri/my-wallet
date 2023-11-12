@@ -39,49 +39,44 @@ import (
 	"os"
 )
 
-// @title Fiber Example API
-// @version 1.0
-// @description This is a sample swagger for Fiber
-// @termsOfService http://swagger.io/terms/
-// @contact.name API Support
-// @contact.email fiber@swagger.io
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-// @host localhost:8080
-// @BasePath /
 func Run() {
 	err := config.LoadConfig()
+	log := infrastructure.Log
+
 	if err != nil {
 		os.Exit(1)
 	}
-
-	log := infrastructure.Log
-	db, err := infrastructure.ConnectDB()
+	err = middleware.LoadErrorListFromJsonFile(config.AppConfig.ErrorContract.JSONPathFile)
 	if err != nil {
 		log.Error("Error connecting database")
 	}
+
+	database := infrastructure.ConnectDB()
+	if database.Error != nil {
+		log.Error("Error connecting database")
+		os.Exit(1)
+	}
+
 	redisClient := infrastructure.RedisClient
 	mq := infrastructure.NewRabbitMQ(config.AppConfig)
 
 	app := fiber.New(fiber.Config{
-		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
-			return middleware.NewErrorhandler(ctx, err)
-		},
+		ErrorHandler: middleware.ErrorHandler,
 	})
 	app.Use(cors.New())
 	hub := dto.Hub{NotificationChannel: map[string]chan response.NotificationDataRes{}}
 
 	//define repository
-	userRepo := userRepository.NewRepository(db, log)
-	accountRepo := accountRepository.NewRepository(db)
-	transactionRepo := transactionRepository.NewRepository(db)
-	notifRepo := notifRepository.NewRepository(db)
-	topupRepo := topupRepository.NewRepository(db)
-	mPinRepo := mPinRepository.NewRepository(db)
+	userRepo := userRepository.NewRepository(database.DB, log)
+	accountRepo := accountRepository.NewRepository(database.DB)
+	transactionRepo := transactionRepository.NewRepository(database.DB)
+	notifRepo := notifRepository.NewRepository(database.DB)
+	topupRepo := topupRepository.NewRepository(database.DB)
+	mPinRepo := mPinRepository.NewRepository(database.DB)
 
 	//define service
 	messageQueueService := mqService.NewMqService(mq)
-	userSvc := userService.NewService(userRepo, log, accountRepo, redisClient, messageQueueService)
+	userSvc := userService.NewService(userRepo, log, accountRepo, mPinRepo, redisClient, messageQueueService)
 	transacetionSvc := transactionService.NewService(transactionRepo, accountRepo, notifRepo, &hub, redisClient)
 	notifSvc := notifService.NewService(notifRepo)
 	midtransSvc := midtransService.NewService()
@@ -111,11 +106,6 @@ func Run() {
 	})
 
 	routeApp.SetupRoute(app)
-
-	fmt.Println("MIDTRANS SERVER KEY : ", config.AppConfig.Midtrans.ServerKey)
-
-	fmt.Println("MIDTRANS Client KEY : ", config.AppConfig.Midtrans.ClientKey)
-	fmt.Println("MIDTRANS Merchant ID : ", config.AppConfig.Midtrans.MerchantID)
 
 	err = app.Listen(fmt.Sprintf(":%s", config.AppConfig.Port))
 	if err != nil {

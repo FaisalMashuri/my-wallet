@@ -11,6 +11,9 @@ type mPinRepostoryImpl struct {
 	db *gorm.DB
 }
 
+func (m *mPinRepostoryImpl) GetDB() *gorm.DB {
+	return m.db
+}
 func (m *mPinRepostoryImpl) CreatePin(modelPin mpin.Pin) (err error) {
 	//TODO implement me
 	err = m.db.Debug().Create(&modelPin).Error

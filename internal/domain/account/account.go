@@ -1,6 +1,7 @@
 package account
 
 import (
+	"github.com/FaisalMashuri/my-wallet/shared"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -32,6 +33,7 @@ type Account struct {
 
 func (a *Account) BeforeCreate(db *gorm.DB) (err error) {
 	a.ID = uuid.New().String()
-	//a.AccountNumber = shared.GenerateAccountNumber()
+	a.AccountNumber = shared.GenerateAccountNumber()
+	a.Balance = 0
 	return err
 }

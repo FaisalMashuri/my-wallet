@@ -4,17 +4,24 @@ import (
 	"github.com/FaisalMashuri/my-wallet/config"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"math/rand"
 	"time"
 )
 
-func GenerateAccessToken(user *user.User) (string, error) {
+func GenerateAccessToken(user user.AuthData) (string, error) {
 	claims := jwt.MapClaims{
-		"id":        user.ID,
-		"email":     user.Email,
-		"createdAt": user.CreatedAt,
-		"updatedAt": user.UpdatedAt,
-		"exp":       time.Now().Add(time.Hour * 1).Unix(),
+		"sub":          user.ID,
+		"iss":          "wallet indonesia corp",
+		"iat":          time.Now().Unix(),
+		"exp":          time.Now().Add(time.Hour * 32).Unix(),
+		"jti":          uuid.NewString(),
+		"email":        user.Email,
+		"name":         user.Name,
+		"phone":        user.Phone,
+		"securityCode": user.SecurityCode,
+		"userType":     user.UserType,
+		"isVerified":   user.IsVerified,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	t, err := token.SignedString([]byte(config.AppConfig.SecretKey))
@@ -24,13 +31,13 @@ func GenerateAccessToken(user *user.User) (string, error) {
 	return t, nil
 }
 
-func GenerateRefreshToken(user *user.User) (string, error) {
+func GenerateRefreshToken(userID string) (string, error) {
 	claims := jwt.MapClaims{
-		"id":        user.ID,
-		"email":     user.Email,
-		"createdAt": user.CreatedAt,
-		"updatedAt": user.UpdatedAt,
-		"exp":       time.Now().Add(time.Hour * 32).Unix(),
+		"sub": userID,
+		"iss": "wallet indonesia corp",
+		"iat": time.Now(),
+		"exp": time.Now().Add(time.Hour * 32).Unix(),
+		"jti": "refresh_token_" + uuid.NewString(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	t, err := token.SignedString([]byte(config.AppConfig.SecretKey))

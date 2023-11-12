@@ -9,6 +9,7 @@ import (
 	"github.com/FaisalMashuri/my-wallet/shared/constant"
 	"github.com/FaisalMashuri/my-wallet/shared/contract"
 	"github.com/gofiber/fiber/v2"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -61,14 +62,13 @@ func (c *userController) Register(ctx *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(http.StatusBadRequest, fmt.Sprintf("%s,%s", err.Error(), fieldErr))
 	}
-	userData, err := c.service.RegisterUser(&regisRequest)
+	res, err := c.service.RegisterUser(&regisRequest)
 	if err != nil {
 		c.log.WithField("error", err.Error()).Info("Registration failed " + err.Error())
-		errCode, _ := strconv.Atoi(err.Error())
-		return fiber.NewError(errCode, err.Error())
+		return errors.New(err.Error())
 	}
-	resp := shared.SuccessResponse("Succes", "Succes registration user", userData.ToRegisterResponse())
-	return ctx.Status(200).JSON(resp)
+	resp := shared.SuccessResponse("Succes", "Succes registration user", res)
+	return middleware.ResponseSuccess(ctx, contract.SuccessCode, resp)
 }
 
 func (c *userController) GetDetailUserJWT(ctx *fiber.Ctx) error {
@@ -109,4 +109,20 @@ func (c *userController) ResendOTP(ctx *fiber.Ctx) error {
 	}
 	resp := shared.SuccessResponse("Success", "OTP has been resent", nil)
 	return ctx.Status(http.StatusOK).JSON(resp)
+}
+
+func (c *userController) CheckPhoneNumberExist(ctx *fiber.Ctx) error {
+	var req request.CheckPhoneNumberRequest
+	err := ctx.BodyParser(&req)
+	if err != nil {
+		return errors.New(contract.ErrCantParseBodyJSON)
+	}
+	fmt.Println("REQUEST : ", req.Phone)
+	isExist, err := c.service.IsPhoneNumberExist(req.Phone)
+	if err != nil || isExist {
+		return err
+	}
+
+	return middleware.ResponseSuccess(ctx, contract.SuccessCode, "Phone number available")
+
 }

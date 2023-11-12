@@ -2,133 +2,143 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/account"
 	dtoResAccount "github.com/FaisalMashuri/my-wallet/internal/domain/account/dto/response"
+	"github.com/FaisalMashuri/my-wallet/internal/domain/mpin"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/mq"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/request"
 	"github.com/FaisalMashuri/my-wallet/internal/domain/user/dto/response"
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 	"time"
 
 	"github.com/FaisalMashuri/my-wallet/shared"
 	"github.com/FaisalMashuri/my-wallet/shared/contract"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type userService struct {
 	repo        user.UserRepository
 	repoAccount account.AccountRepository
+	repoPin     mpin.PinRepository
 	log         *logrus.Logger
 	redisClient *redis.Client
 	mq          mq.MQService
 }
 
-func NewService(repo user.UserRepository, log *logrus.Logger, repoAccount account.AccountRepository, redis *redis.Client, mq mq.MQService) user.UserService {
+func NewService(repo user.UserRepository, log *logrus.Logger, repoAccount account.AccountRepository, repoPin mpin.PinRepository, redis *redis.Client, mq mq.MQService) user.UserService {
 	return &userService{
 		repo:        repo,
 		repoAccount: repoAccount,
+		repoPin:     repoPin,
 		log:         log,
 		redisClient: redis,
 		mq:          mq,
 	}
 }
 
-func (s *userService) Login(userRequest *request.LoginRequest) (*response.LoginResponse, error) {
-	userData, err := s.repo.FindUserByEmail(userRequest.Email)
-	if userData == nil {
-		if err != nil {
-			s.log.WithField("error", err.Error()).Info("failed to find user")
-			return nil, errors.New(contract.ErrInternalServer)
-		}
-		s.log.Info("User not found")
-		return nil, errors.New(contract.ErrRecordNotFound)
+func (s *userService) RegisterUser(userRequest *request.RegisterRequest) (*response.AuthResponse, error) {
+	//ctx := context.Background()
+
+	userModel := &user.User{
+		Name:       userRequest.Name,
+		Email:      userRequest.Email,
+		Phone:      userRequest.Phone,
+		VerifiedAt: sql.NullTime{Time: time.Now(), Valid: true},
 	}
-	if !userData.VerifiedAt.Valid {
-		return nil, errors.New(contract.ErrUserNotVerified)
+	userData, err := s.repo.CreateUser(userModel)
+	if err != nil {
+		return nil, err
+	}
+	mPinModel := mpin.Pin{
+		UserID: userData.ID,
+		Pin:    userRequest.SecurityCode,
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(userData.Password), []byte(userRequest.Password))
+	err = s.repoPin.CreatePin(mPinModel)
 	if err != nil {
-		s.log.Info("Password mismatch")
-		return nil, errors.New(contract.ErrPasswordNotMatch)
+		return nil, err
+
+	}
+	accountModel := account.Account{
+		UserID: userData.ID,
+	}
+	_, err = s.repoAccount.CreateAccount(accountModel)
+	if err != nil {
+		return nil, err
 	}
 
-	accessToken, err := shared.GenerateAccessToken(userData)
-	if err != nil {
-		s.log.Info("faile generate token")
-		return nil, errors.New(contract.ErrUnexpectedError)
-	}
-	refeshToken, err := shared.GenerateRefreshToken(userData)
-	if err != nil {
-		s.log.Info("faile generate token")
-		return nil, errors.New(contract.ErrUnexpectedError)
+	authData := user.AuthData{
+		ID:           userData.ID,
+		Email:        userData.Email,
+		Name:         userData.Name,
+		Phone:        userData.Phone,
+		SecurityCode: mPinModel.Pin,
+		UserType:     "regular",
+		IsVerified:   true,
 	}
 
-	res := response.LoginResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refeshToken,
+	accessToken, err := shared.GenerateAccessToken(authData)
+	if err != nil {
+		return nil, err
 	}
-	return &res, nil
+
+	refreshToken, err := shared.GenerateRefreshToken(authData.ID)
+	if err != nil {
+		return nil, err
+	}
+	resData := &response.AuthResponse{
+		accessToken,
+		refreshToken,
+	}
+
+	return resData, nil
+
 }
-
-func (s *userService) RegisterUser(userRequest *request.RegisterRequest) (userData *user.User, err error) {
-	ctx := context.Background()
-	userData, err = s.repo.FindUserByEmail(userRequest.Email)
-	if userData != nil {
-		if err != nil {
-			s.log.WithField("error", err.Error()).Info("Error find email")
-			return nil, errors.New(contract.ErrInternalServer)
-
+func (s *userService) Login(userRequest *request.LoginRequest) (*response.AuthResponse, error) {
+	userData, err := s.repo.GetUserByPhoneNumber(userRequest.Phone)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.New(contract.ErrRecordNotFound)
 		}
-		s.log.Info("Email already registered")
-		return nil, errors.New(contract.ErrEmailAlreadyRegister)
+		return nil, errors.New(contract.ErrUnExpected)
 	}
 
-	userModel := userData.FromRegistRequest(userRequest)
-	userData, err = s.repo.CreateUser(&userModel)
+	mPinData, err := s.repoPin.FindByUserId(userData.ID)
+	if userRequest.SecurityCode != mPinData.Pin {
+		return nil, errors.New(contract.ErrInvalidSecurityCode)
+	}
+
+	authData := user.AuthData{
+		ID:           userData.ID,
+		Email:        userData.Email,
+		Name:         userData.Name,
+		Phone:        userData.Phone,
+		SecurityCode: mPinData.Pin,
+		UserType:     "regular",
+		IsVerified:   true,
+	}
+
+	accessToken, err := shared.GenerateAccessToken(authData)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Info("failed to create user")
-		return nil, err
+		return nil, errors.New(contract.ErrGenerateToken)
 	}
-
-	accountData := account.Account{
-		UserID:        userData.ID,
-		Balance:       0,
-		AccountNumber: shared.GenerateAccountNumber(),
-	}
-
-	_, err = s.repoAccount.CreateAccount(accountData)
+	refreshToken, err := shared.GenerateRefreshToken(userData.ID)
 	if err != nil {
-		s.log.Info("failed to create account")
-		return nil, errors.New(contract.ErrInternalServer)
-	}
-	otp := shared.GenerateOTP()
-	err = s.redisClient.Set(ctx, otp, userModel.ID, 60*time.Second).Err()
-	if err != nil {
-		return nil, err
-	}
-	payloadBody := map[string]interface{}{
-		"email": userModel.Email,
-		"otp":   otp,
+		return nil, errors.New(contract.ErrGenerateToken)
 	}
 
-	pBody := mq.MessageQueueEmitter{
-		Title:   "Register user",
-		Payload: payloadBody,
-	}
-	payload, err := json.Marshal(pBody)
-
-	err = s.mq.SendData("user.register", payload)
-	if err == nil {
-		fmt.Println("Topic successfully sent to MQ")
+	res := response.AuthResponse{
+		accessToken,
+		refreshToken,
 	}
 
-	return userData, nil
+	return &res, nil
 }
 
 func (s *userService) GetDetailUserById(id string) (res response.UserDetail, err error) {
@@ -188,7 +198,7 @@ func (s *userService) VerifyUser(verReq request.VerifiedUserRequest) error {
 		if err == redis.Nil {
 			return errors.New(contract.ErrInvalidOTP)
 		}
-		return errors.New(contract.ErrUnexpectedError)
+		return errors.New(contract.ErrUnExpected)
 	}
 	err = s.repo.VerifyUser(val)
 	if err != nil {
@@ -210,4 +220,15 @@ func (s *userService) ResendOTP(userId string) error {
 	}
 	fmt.Println("OTP resend : ", otp)
 	return nil
+}
+
+func (s *userService) IsPhoneNumberExist(phoneNumber string) (bool, error) {
+	err := s.repo.FindPhoneNumber(phoneNumber)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, nil
+		}
+		return false, errors.New(contract.ErrUnExpected)
+	}
+	return true, errors.New(contract.ErrDuplicateValue)
 }

@@ -8,6 +8,7 @@ import (
 )
 
 type PinRepository interface {
+	GetDB() *gorm.DB
 	CreatePin(modelPin Pin) error
 	FindByUserId(userId string) (Pin, error)
 }
